@@ -21,7 +21,7 @@ const defaultSettings = Object.freeze({
     ignoreRegexLines: '',
     highlightTheme: 'glass',
     wrongBook: [],
-    favorites: []
+    favorites: [],
 });
 
 function getContext() {
@@ -74,12 +74,12 @@ async function init() {
         await mountSettingsUI({
             moduleName: MODULE_NAME,
             getSettings,
-            defaultSettings
+            defaultSettings,
         });
 
         startMessageLocker({
             moduleName: MODULE_NAME,
-            getSettings
+            getSettings,
         });
 
         mountPanelButton(MODULE_NAME, getSettings);
