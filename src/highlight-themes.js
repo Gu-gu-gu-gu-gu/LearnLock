@@ -40,7 +40,7 @@ export var HIGHLIGHT_THEMES = {
         ].join('\n'),
     },
     glass: {
-        name: '玻璃光泽 (提亮版)',
+        name: '玻璃光泽',
         css: [
             '.learnlock-hl-word {',
             '    border-radius: 6px;',
