@@ -10,9 +10,9 @@ function normalizeForCompare(s) {
     var lower = String(s || '').toLowerCase();
     for (var i = 0; i < lower.length; i++) {
         var c = lower.charCodeAt(i);
-        var isLetter = (c >= 97 && c <= 122);
-        var isDigit = (c >= 48 && c <= 57);
-        var isCjk = (c >= 0x4e00 && c <= 0x9fff);
+        var isLetter = c >= 97 && c <= 122;
+        var isDigit = c >= 48 && c <= 57;
+        var isCjk = c >= 0x4e00 && c <= 0x9fff;
         if (isLetter || isDigit || isCjk) out += lower.charAt(i);
     }
     return out;
@@ -117,7 +117,13 @@ function collectAcceptableAnswers(correctAnswer, challengeType) {
  * @param {string[]} [extraAcceptable] - 额外可接受答案（来自出题时绑定）
  * @returns {{ correct: boolean, feedback: string }}
  */
-export function judgeAnswer(userAnswer, correctAnswer, challengeType, synonymMode, extraAcceptable) {
+export function judgeAnswer(
+    userAnswer,
+    correctAnswer,
+    challengeType,
+    synonymMode,
+    extraAcceptable
+) {
     var normalizedUser = normalizeForCompare(userAnswer);
 
     if (!normalizedUser) {
@@ -151,7 +157,7 @@ export function judgeAnswer(userAnswer, correctAnswer, challengeType, synonymMod
         if (normalizedUser === acceptable[j]) {
             return {
                 correct: true,
-                feedback: '回答正确（同义词）！更常用的表达：' + String(correctAnswer)
+                feedback: '回答正确（同义词）！更常用的表达：' + String(correctAnswer),
             };
         }
     }
@@ -160,14 +166,17 @@ export function judgeAnswer(userAnswer, correctAnswer, challengeType, synonymMod
     var userHasCjk = false;
     for (var ci = 0; ci < normalizedUser.length; ci++) {
         var cc = normalizedUser.charCodeAt(ci);
-        if (cc >= 0x4e00 && cc <= 0x9fff) { userHasCjk = true; break; }
+        if (cc >= 0x4e00 && cc <= 0x9fff) {
+            userHasCjk = true;
+            break;
+        }
     }
     if (userHasCjk) {
         // 先对标准答案做模糊
         if (fuzzyMatchChinese(normalizedUser, normalizedCorrect)) {
             return {
                 correct: true,
-                feedback: '回答正确！标准写法：' + String(correctAnswer)
+                feedback: '回答正确！标准写法：' + String(correctAnswer),
             };
         }
         // 再对所有可接受答案做模糊
@@ -175,7 +184,7 @@ export function judgeAnswer(userAnswer, correctAnswer, challengeType, synonymMod
             if (fuzzyMatchChinese(normalizedUser, acceptable[fj])) {
                 return {
                     correct: true,
-                    feedback: '回答正确（近义表达）！更标准的写法：' + String(correctAnswer)
+                    feedback: '回答正确（近义表达）！更标准的写法：' + String(correctAnswer),
                 };
             }
         }
@@ -183,6 +192,6 @@ export function judgeAnswer(userAnswer, correctAnswer, challengeType, synonymMod
 
     return {
         correct: false,
-        feedback: '答案不正确。标准答案：' + String(correctAnswer)
+        feedback: '答案不正确。标准答案：' + String(correctAnswer),
     };
 }

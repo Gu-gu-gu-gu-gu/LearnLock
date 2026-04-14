@@ -12,7 +12,7 @@ function speakWordTTS(word, lang) {
     if (!word || typeof window.speechSynthesis === 'undefined') return;
     window.speechSynthesis.cancel();
     var utterance = new SpeechSynthesisUtterance(String(word));
-    utterance.lang = (lang === 'zh') ? 'zh-CN' : 'en-US';
+    utterance.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
     utterance.rate = 0.85;
     utterance.volume = 0.9;
     window.speechSynthesis.speak(utterance);
@@ -23,8 +23,12 @@ function playAudioChain(apiUrl, ttsWord, ttsLang) {
         try {
             var audio = new Audio(apiUrl);
             audio.volume = 0.85;
-            audio.play().catch(function () { speakWordTTS(ttsWord, ttsLang); });
-        } catch (_) { speakWordTTS(ttsWord, ttsLang); }
+            audio.play().catch(function () {
+                speakWordTTS(ttsWord, ttsLang);
+            });
+        } catch (_) {
+            speakWordTTS(ttsWord, ttsLang);
+        }
     } else {
         speakWordTTS(ttsWord, ttsLang);
     }
@@ -35,7 +39,7 @@ const managedMessageIds = new Set();
 
 var streamState = {
     active: false,
-    lastTickAt: 0
+    lastTickAt: 0,
 };
 
 var activeMessageId = -1;
@@ -76,7 +80,9 @@ function pickActiveMessageId() {
         if (s0 && !isComplete(s0)) return activeMessageId;
     }
 
-    var keys = Array.from(sessions.keys()).sort(function (a, b) { return b - a; });
+    var keys = Array.from(sessions.keys()).sort(function (a, b) {
+        return b - a;
+    });
     for (var i = 0; i < keys.length; i += 1) {
         var id = keys[i];
         var s = sessions.get(id);
@@ -125,11 +131,14 @@ function hasCjk(input) {
 function splitAnswerCandidatesFromText(answerText) {
     var s = String(answerText || '').trim();
     if (!s) return [];
-    return s.split(/[，,、;；|/\n]|(?:\s+or\s+)|(?:\s+OR\s+)|(?:或者)|(?:或)/).map(function (x) {
-        return String(x || '').trim();
-    }).filter(function (x) {
-        return x.length > 0;
-    });
+    return s
+        .split(/[，,、;；|/\n]|(?:\s+or\s+)|(?:\s+OR\s+)|(?:或者)|(?:或)/)
+        .map(function (x) {
+            return String(x || '').trim();
+        })
+        .filter(function (x) {
+            return x.length > 0;
+        });
 }
 
 function getAcceptedAnswers(challenge) {
@@ -157,11 +166,14 @@ function getAcceptedAnswers(challenge) {
 }
 
 function pickFirstEnglishToken(input) {
-    var parts = String(input || '').split(/[，,、;；|/\s]+/).map(function (x) {
-        return String(x || '').trim();
-    }).filter(function (x) {
-        return x.length > 0;
-    });
+    var parts = String(input || '')
+        .split(/[，,、;；|/\s]+/)
+        .map(function (x) {
+            return String(x || '').trim();
+        })
+        .filter(function (x) {
+            return x.length > 0;
+        });
 
     for (var i = 0; i < parts.length; i += 1) {
         if (/^[a-zA-Z][a-zA-Z'-]*$/.test(parts[i])) return parts[i];
@@ -217,18 +229,24 @@ function isAnswerCorrect(userAnswer, challenge) {
 function splitNaturalParagraphs(text) {
     var raw = String(text || '').replace(/\r\n/g, '\n');
 
-    var byBlankLine = raw.split(/\n\s*\n+/).map(function (s) {
-        return String(s || '').trim();
-    }).filter(function (s) {
-        return s.length > 0;
-    });
+    var byBlankLine = raw
+        .split(/\n\s*\n+/)
+        .map(function (s) {
+            return String(s || '').trim();
+        })
+        .filter(function (s) {
+            return s.length > 0;
+        });
     if (byBlankLine.length >= 2) return byBlankLine;
 
-    var byLine = raw.split(/\n+/).map(function (s) {
-        return String(s || '').trim();
-    }).filter(function (s) {
-        return s.length > 0;
-    });
+    var byLine = raw
+        .split(/\n+/)
+        .map(function (s) {
+            return String(s || '').trim();
+        })
+        .filter(function (s) {
+            return s.length > 0;
+        });
     if (byLine.length >= 2) return byLine;
 
     var sentenceMatches = raw.match(/[^。！？!?\.]+[。！？!?\.]?/g);
@@ -290,7 +308,8 @@ function cleanupDisplayText(rawText) {
     // ===== 用户自定义忽略正则 =====
     try {
         var context = SillyTavern.getContext();
-        var extSettings = context.extensionSettings && context.extensionSettings.extension_learnlock_mvp;
+        var extSettings =
+            context.extensionSettings && context.extensionSettings.extension_learnlock_mvp;
         var rawLines = String((extSettings && extSettings.ignoreRegexLines) || '');
         if (rawLines.trim()) {
             var regexLines = rawLines.split('\n');
@@ -328,58 +347,209 @@ function getUnlockParagraphCount(settings) {
     return Math.max(1, Math.min(50, Math.floor(n)));
 }
 
-   function getHighlightLimit(settings) {
-       var value = Number(settings && settings.maxWordCardsPerMessage);
-       if (!Number.isFinite(value) || value <= 0) return 0;
-       return Math.max(1, Math.min(300, Math.floor(value)));
-   }
+function getHighlightLimit(settings) {
+    var value = Number(settings && settings.maxWordCardsPerMessage);
+    if (!Number.isFinite(value) || value <= 0) return 0;
+    return Math.max(1, Math.min(300, Math.floor(value)));
+}
 
-   function createHighlightState(limit, totalCandidates) {
-       if (!limit || limit <= 0) return null;
-       if (!totalCandidates || totalCandidates <= limit) return null;
-       var indices = [];
-       for (var i = 0; i < totalCandidates; i++) indices.push(i);
-       for (var fi = indices.length - 1; fi > 0; fi--) {
-           var fj = Math.floor(Math.random() * (fi + 1));
-           var tmp = indices[fi];
-           indices[fi] = indices[fj];
-           indices[fj] = tmp;
-       }
-       var selectedSet = {};
-       for (var si = 0; si < limit && si < indices.length; si++) {
-           selectedSet[indices[si]] = true;
-       }
-       return {
-           limit: limit,
-           globalIndex: 0,
-           selectedSet: selectedSet
-       };
-   }
+function createHighlightState(limit, totalCandidates) {
+    if (!limit || limit <= 0) return null;
+    if (!totalCandidates || totalCandidates <= limit) return null;
+    var indices = [];
+    for (var i = 0; i < totalCandidates; i++) indices.push(i);
+    for (var fi = indices.length - 1; fi > 0; fi--) {
+        var fj = Math.floor(Math.random() * (fi + 1));
+        var tmp = indices[fi];
+        indices[fi] = indices[fj];
+        indices[fj] = tmp;
+    }
+    var selectedSet = {};
+    for (var si = 0; si < limit && si < indices.length; si++) {
+        selectedSet[indices[si]] = true;
+    }
+    return {
+        limit: limit,
+        globalIndex: 0,
+        selectedSet: selectedSet,
+    };
+}
 
-function buildFallbackChallenge() {
+function buildFallbackChallenge(settings, excludeWords) {
     var diffMod = window.__learnlockDifficultyModule;
-    if (diffMod && diffMod.pickRandomByDifficulty) {
-        var entry = diffMod.pickRandomByDifficulty('en', 'intermediate');
-        if (entry && entry.t && entry.t.length > 0) {
+    if (!diffMod || !diffMod.pickRandomByDifficulty) return null;
+
+    var difficultyLevel = String((settings && settings.difficultyLevel) || 'intermediate');
+    var enabledTypes =
+        settings && Array.isArray(settings.challengeTypes) && settings.challengeTypes.length > 0
+            ? settings.challengeTypes.slice()
+            : ['cn_to_en', 'en_to_cn'];
+
+    var levelMap = {
+        beginner: ['A1'],
+        elementary: ['A1', 'A2'],
+        intermediate: ['A1', 'A2', 'B1'],
+        upper: ['A2', 'B1', 'B2'],
+        advanced: ['B1', 'B2', 'C1'],
+        challenge: ['B2', 'C1'],
+    };
+
+    var allowedArr = levelMap[difficultyLevel] || ['A1', 'A2', 'B1'];
+    var allowedSet = {};
+    for (var ai = 0; ai < allowedArr.length; ai += 1) {
+        allowedSet[allowedArr[ai]] = true;
+    }
+
+    var excludeSet = {};
+    if (Array.isArray(excludeWords)) {
+        for (var ex = 0; ex < excludeWords.length; ex += 1) {
+            excludeSet[String(excludeWords[ex] || '').toLowerCase()] = true;
+        }
+    }
+
+    function splitAnswerCandidatesFromText(answerText) {
+        var s = String(answerText || '').trim();
+        if (!s) return [];
+        return s
+            .split(/[，,、;；|/\n]|(?:\s+or\s+)|(?:\s+OR\s+)|(?:或者)|(?:或)/)
+            .map(function (x) {
+                return String(x || '').trim();
+            })
+            .filter(function (x) {
+                return x.length > 0;
+            });
+    }
+
+    function dedupe(list, skipLower) {
+        var out = [];
+        var seen = {};
+        var skip = String(skipLower || '').toLowerCase();
+        for (var i = 0; i < list.length; i += 1) {
+            var v = String(list[i] || '').trim();
+            if (!v) continue;
+            var k = v.toLowerCase();
+            if (k === skip) continue;
+            if (seen[k]) continue;
+            seen[k] = true;
+            out.push(v);
+        }
+        return out;
+    }
+
+    function isLevelAllowedByLookup(word, lookupFn) {
+        if (!lookupFn) return true;
+        var e = lookupFn(String(word || '').trim());
+        if (!e || !e.l) return true;
+        return !!allowedSet[String(e.l)];
+    }
+
+    var shuffledTypes = enabledTypes.slice();
+    for (var s = shuffledTypes.length - 1; s > 0; s -= 1) {
+        var r = Math.floor(Math.random() * (s + 1));
+        var tmp = shuffledTypes[s];
+        shuffledTypes[s] = shuffledTypes[r];
+        shuffledTypes[r] = tmp;
+    }
+
+    for (var ti = 0; ti < shuffledTypes.length; ti += 1) {
+        var type = shuffledTypes[ti];
+
+        if (type === 'cn_to_en') {
+            var zhEntry = diffMod.pickRandomByDifficulty('zh', difficultyLevel);
+            if (!zhEntry || !Array.isArray(zhEntry.t) || zhEntry.t.length === 0) continue;
+            if (excludeSet[String(zhEntry.w || '').toLowerCase()]) continue;
+
+            var allEn = [];
+            for (var ei = 0; ei < zhEntry.t.length; ei += 1) {
+                var parts = splitAnswerCandidatesFromText(zhEntry.t[ei]);
+                for (var ep = 0; ep < parts.length; ep += 1) allEn.push(parts[ep]);
+            }
+
+            var mainEn = '';
+            for (var me = 0; me < allEn.length; me += 1) {
+                var candEn = String(allEn[me] || '').trim();
+                if (!candEn) continue;
+                if (excludeSet[candEn.toLowerCase()]) continue;
+                if (!isLevelAllowedByLookup(candEn, diffMod.lookupEnWord)) continue;
+                mainEn = candEn;
+                break;
+            }
+            if (!mainEn) continue;
+
+            var acceptableEn = dedupe(allEn, mainEn);
+            if (diffMod.lookupEnWord) {
+                var enLookup = diffMod.lookupEnWord(mainEn);
+                if (enLookup && Array.isArray(enLookup.a)) {
+                    acceptableEn = dedupe(acceptableEn.concat(enLookup.a), mainEn);
+                }
+            }
+
+            return {
+                type: 'cn_to_en',
+                question: '把这个中文词翻译成英文：' + String(zhEntry.w),
+                answer: mainEn,
+                acceptableAnswers: acceptableEn,
+                source: 'random',
+                vocabEntry: zhEntry,
+            };
+        }
+
+        if (type === 'en_to_cn') {
+            var enEntry = diffMod.pickRandomByDifficulty('en', difficultyLevel);
+            if (!enEntry || !Array.isArray(enEntry.t) || enEntry.t.length === 0) continue;
+            if (excludeSet[String(enEntry.w || '').toLowerCase()]) continue;
+
+            var allZh = [];
+            for (var zi = 0; zi < enEntry.t.length; zi += 1) {
+                var zhParts = splitAnswerCandidatesFromText(enEntry.t[zi]);
+                for (var zp = 0; zp < zhParts.length; zp += 1) allZh.push(zhParts[zp]);
+            }
+
+            var mainZh = '';
+            for (var mz = 0; mz < allZh.length; mz += 1) {
+                var candZh = String(allZh[mz] || '').trim();
+                if (!candZh) continue;
+                if (excludeSet[candZh.toLowerCase()]) continue;
+                if (!isLevelAllowedByLookup(candZh, diffMod.lookupZhWord)) continue;
+                mainZh = candZh;
+                break;
+            }
+            if (!mainZh) continue;
+
+            var acceptableZh = dedupe(allZh, mainZh);
+            if (diffMod.lookupZhWord) {
+                var zhLookup = diffMod.lookupZhWord(mainZh);
+                if (zhLookup && Array.isArray(zhLookup.a)) {
+                    acceptableZh = dedupe(acceptableZh.concat(zhLookup.a), mainZh);
+                }
+            }
+
             return {
                 type: 'en_to_cn',
-                question: '把这个英文词翻译成中文：' + String(entry.w),
-                answer: entry.t[0],
-                acceptableAnswers: (entry.t.slice(1) || []).concat(entry.a || []),
+                question: '把这个英文词翻译成中文：' + String(enEntry.w),
+                answer: mainZh,
+                acceptableAnswers: acceptableZh,
                 source: 'random',
-                vocabEntry: entry
+                vocabEntry: enEntry,
             };
         }
     }
+
     return null;
 }
 
 function getHiddenParagraphCount(session) {
-    return Math.max(0, Number(session.paragraphs.length || 0) - Number(session.revealedParagraphs || 0));
+    return Math.max(
+        0,
+        Number(session.paragraphs.length || 0) - Number(session.revealedParagraphs || 0)
+    );
 }
 
 function getVisibleParagraphs(session) {
-    var n = Math.max(0, Math.min(Number(session.revealedParagraphs || 0), Number(session.paragraphs.length || 0)));
+    var n = Math.max(
+        0,
+        Math.min(Number(session.revealedParagraphs || 0), Number(session.paragraphs.length || 0))
+    );
     if (n <= 0) return [];
     return session.paragraphs.slice(0, n);
 }
@@ -402,26 +572,28 @@ function refreshChallenge(session, settings) {
     }
     if (!session.currentChallenge && !session.challengeLoading) {
         // 先放一个 fallback 防止空白
-        session.currentChallenge = buildFallbackChallenge();
+        session.currentChallenge = buildFallbackChallenge(settings, session.askedWords || []);
         session.wrongCount = 0;
 
         // 异步用引擎出题替换
         if (settings) {
             session.challengeLoading = true;
-            generateChallenge(session.displayText || '', settings, session.askedWords || []).then(function (challenge) {
-                session.challengeLoading = false;
-                if (challenge && !isComplete(session)) {
-                    session.currentChallenge = challenge;
-                    session.renderKey = '';
-                    session.streamKey = '';
-                    // 触发重渲染
-                    renderSession(session.messageId, settings);
-                    renderDock(settings, true);
-                }
-            }).catch(function (err) {
-                session.challengeLoading = false;
-                console.warn('[LearnLock] 引擎出题失败，保留 fallback:', err);
-            });
+            generateChallenge(session.displayText || '', settings, session.askedWords || [])
+                .then(function (challenge) {
+                    session.challengeLoading = false;
+                    if (challenge && !isComplete(session)) {
+                        session.currentChallenge = challenge;
+                        session.renderKey = '';
+                        session.streamKey = '';
+                        // 触发重渲染
+                        renderSession(session.messageId, settings);
+                        renderDock(settings, true);
+                    }
+                })
+                .catch(function (err) {
+                    session.challengeLoading = false;
+                    console.warn('[LearnLock] 引擎出题失败，保留 fallback:', err);
+                });
         }
     }
 }
@@ -462,18 +634,15 @@ function ensureSession(messageId, settings) {
             streamKey: '',
             solvedWords: [],
             askedWords: [],
-            questionsAnswered: 0
+            questionsAnswered: 0,
         };
         sessions.set(messageId, session);
     } else {
         var prevRaw = String(session.fullTextRaw || '');
         var wasComplete = isComplete(session);
         var rawChanged = currentRaw !== prevRaw;
-        var looksLikeRegenerate = rawChanged && (
-            currentRaw.length < prevRaw.length ||
-            session.finished ||
-            wasComplete
-        );
+        var looksLikeRegenerate =
+            rawChanged && (currentRaw.length < prevRaw.length || session.finished || wasComplete);
 
         session.fullTextRaw = currentRaw;
         session.displayText = cleanupDisplayText(session.fullTextRaw);
@@ -519,75 +688,76 @@ function ensureCustomBody(refs) {
     return $body;
 }
 
-   function setStreamLock(messageId, locked, session, settings) {
-       var refs = getDomRefs(messageId);
-       if (!refs) return;
+function setStreamLock(messageId, locked, session, settings) {
+    var refs = getDomRefs(messageId);
+    if (!refs) return;
 
-       var $body = ensureCustomBody(refs);
+    var $body = ensureCustomBody(refs);
 
-       if (!locked) {
-           refs.$mes.removeClass('learnlock-hide-original');
-           refs.$text.removeClass('learnlock-force-hide');
-           $body.empty();
-           return;
-       }
+    if (!locked) {
+        refs.$mes.removeClass('learnlock-hide-original');
+        refs.$text.removeClass('learnlock-force-hide');
+        $body.empty();
+        return;
+    }
 
-       var parts = getVisibleParagraphs(session);
-       var hidden = getHiddenParagraphCount(session);
+    var parts = getVisibleParagraphs(session);
+    var hidden = getHiddenParagraphCount(session);
 
-       if (hidden <= 0) {
-           refs.$mes.removeClass('learnlock-hide-original');
-           refs.$text.removeClass('learnlock-force-hide');
-           $body.empty();
-           return;
-       }
+    if (hidden <= 0) {
+        refs.$mes.removeClass('learnlock-hide-original');
+        refs.$text.removeClass('learnlock-force-hide');
+        $body.empty();
+        return;
+    }
 
-       refs.$mes.addClass('learnlock-hide-original');
-       refs.$text.addClass('learnlock-force-hide');
+    refs.$mes.addClass('learnlock-hide-original');
+    refs.$text.addClass('learnlock-force-hide');
 
-       if ($body.find('.learnlock-word-card-wrap').length > 0) return;
+    if ($body.find('.learnlock-word-card-wrap').length > 0) return;
 
-       var key = [
-           'stream',
-           messageId,
-           session.revealedParagraphs,
-           session.paragraphs.length,
-           session.finished ? 1 : 0,
-           session.wrongCount,
-           session.currentChallenge ? session.currentChallenge.question : '',
-           session.currentChallenge ? session.currentChallenge.answer : ''
-       ].join('|');
+    var key = [
+        'stream',
+        messageId,
+        session.revealedParagraphs,
+        session.paragraphs.length,
+        session.finished ? 1 : 0,
+        session.wrongCount,
+        session.currentChallenge ? session.currentChallenge.question : '',
+        session.currentChallenge ? session.currentChallenge.answer : '',
+    ].join('|');
 
-       if (session.streamKey === key) return;
-       session.streamKey = key;
+    if (session.streamKey === key) return;
+    session.streamKey = key;
 
-       var highlightLimit = getHighlightLimit(settings);
-       var totalCandidates = 0;
-       for (var tc = 0; tc < parts.length; tc += 1) {
-           totalCandidates += countCandidates(String(parts[tc] || ''));
-       }
-       var highlightState = createHighlightState(highlightLimit, totalCandidates);
+    var highlightLimit = getHighlightLimit(settings);
+    var totalCandidates = 0;
+    for (var tc = 0; tc < parts.length; tc += 1) {
+        totalCandidates += countCandidates(String(parts[tc] || ''));
+    }
+    var highlightState = createHighlightState(highlightLimit, totalCandidates);
 
-       var html = '<div class="learnlock-message-wrapper"><div class="learnlock-visible-text">';
-       for (var i = 0; i < parts.length; i += 1) {
-           var partText = String(parts[i] || '');
-           var partHtml = highlightParagraph(
-               partText,
-               session.currentChallenge,
-               session.solvedWords || [],
-               highlightState
-           );
-           if (!partHtml) partHtml = escapeHtml(partText);
-           html += '<div class="learnlock-visible-paragraph">' + partHtml + '</div>';
-       }
-       var statusText = '🔒 生成中：已解锁 ' + String(parts.length) + ' 段，剩余 ' + String(hidden) + ' 段';
-       if (session.currentChallenge) {
-           statusText += ' — 可在下方答题解锁';
-       }
-       html += '</div><div class="learnlock-hint">' + statusText + '</div></div>';
+    var html = '<div class="learnlock-message-wrapper"><div class="learnlock-visible-text">';
+    for (var i = 0; i < parts.length; i += 1) {
+        var partText = String(parts[i] || '');
+        var partHtml = highlightParagraph(
+            partText,
+            session.currentChallenge,
+            session.solvedWords || [],
+            highlightState
+        );
+        if (!partHtml) partHtml = escapeHtml(partText);
+        html += '<div class="learnlock-visible-paragraph">' + partHtml + '</div>';
+    }
+    var statusText =
+        '🔒 生成中：已解锁 ' + String(parts.length) + ' 段，剩余 ' + String(hidden) + ' 段';
+    if (session.currentChallenge) {
+        statusText += ' — 可在下方答题解锁';
+    }
+    html += '</div><div class="learnlock-hint">' + statusText + '</div></div>';
 
-       $body.html(html);
-   }
+    $body.html(html);
+}
 
 function buildRenderKey(session) {
     return [
@@ -597,7 +767,7 @@ function buildRenderKey(session) {
         session.wrongCount,
         session.currentChallenge ? session.currentChallenge.question : '',
         session.currentChallenge ? session.currentChallenge.answer : '',
-        (session.solvedWords || []).length
+        (session.solvedWords || []).length,
     ].join('|');
 }
 
@@ -614,8 +784,12 @@ function findHighlightSpans(content, lookupEn, lookupZh) {
             var entry = lookupEn(w);
             if (!entry) continue;
             spans.push({
-                start: match.index, end: match.index + match[0].length,
-                raw: match[0], word: w, lang: 'en', entry: entry
+                start: match.index,
+                end: match.index + match[0].length,
+                raw: match[0],
+                word: w,
+                lang: 'en',
+                entry: entry,
             });
         }
     }
@@ -637,282 +811,312 @@ function findHighlightSpans(content, lookupEn, lookupZh) {
                 var allCjk = true;
                 for (var ci = 0; ci < seg.length; ci++) {
                     var code = seg.charCodeAt(ci);
-                    if (code < 0x4e00 || code > 0x9fff) { allCjk = false; break; }
+                    if (code < 0x4e00 || code > 0x9fff) {
+                        allCjk = false;
+                        break;
+                    }
                 }
                 if (!allCjk) continue;
 
                 var zhEntry = lookupZh(seg);
                 if (!zhEntry) continue;
                 spans.push({
-                    start: i, end: i + len,
-                    raw: seg, word: seg, lang: 'zh', entry: zhEntry
+                    start: i,
+                    end: i + len,
+                    raw: seg,
+                    word: seg,
+                    lang: 'zh',
+                    entry: zhEntry,
                 });
             }
         }
     }
 
-    spans.sort(function (a, b) { return a.start - b.start; });
+    spans.sort(function (a, b) {
+        return a.start - b.start;
+    });
     return spans;
 }
 
-   function injectHighlightsToRenderedDom($textEl, solvedWords, messageId, highlightLimit) {
-       if (!$textEl || $textEl.length === 0) return;
+function injectHighlightsToRenderedDom($textEl, solvedWords, messageId, highlightLimit) {
+    if (!$textEl || $textEl.length === 0) return;
 
-       var diffMod = window.__learnlockDifficultyModule;
-       var lookupEn = diffMod ? diffMod.lookupEnWord : null;
-       var lookupZh = diffMod ? diffMod.lookupZhWord : null;
-       if (!lookupEn && !lookupZh) return;
+    var diffMod = window.__learnlockDifficultyModule;
+    var lookupEn = diffMod ? diffMod.lookupEnWord : null;
+    var lookupZh = diffMod ? diffMod.lookupZhWord : null;
+    if (!lookupEn && !lookupZh) return;
 
-       var cleanText = '';
-       try {
-           var ctxRef = getContext();
-           var msgRef = (ctxRef.chat || [])[messageId];
-           if (msgRef && msgRef.mes) {
-               cleanText = cleanupDisplayText(String(msgRef.mes));
-           }
-       } catch (_) {}
-       var cleanTextLower = cleanText.toLowerCase();
+    var cleanText = '';
+    try {
+        var ctxRef = getContext();
+        var msgRef = (ctxRef.chat || [])[messageId];
+        if (msgRef && msgRef.mes) {
+            cleanText = cleanupDisplayText(String(msgRef.mes));
+        }
+    } catch (_) {}
+    var cleanTextLower = cleanText.toLowerCase();
 
-       var solvedSet = {};
-       if (Array.isArray(solvedWords)) {
-           for (var i = 0; i < solvedWords.length; i++) {
-               solvedSet[String(solvedWords[i]).toLowerCase()] = true;
-           }
-       }
+    var solvedSet = {};
+    if (Array.isArray(solvedWords)) {
+        for (var i = 0; i < solvedWords.length; i++) {
+            solvedSet[String(solvedWords[i]).toLowerCase()] = true;
+        }
+    }
 
-       var limitValue = Number(highlightLimit);
-       var limitEnabled = Number.isFinite(limitValue) && limitValue > 0;
+    var limitValue = Number(highlightLimit);
+    var limitEnabled = Number.isFinite(limitValue) && limitValue > 0;
 
-       // ===== 第一遍：收集所有候选高亮位置 =====
-       var walker = document.createTreeWalker(
-           $textEl[0], NodeFilter.SHOW_TEXT, null, false
-       );
-       var textNodes = [];
-       while (walker.nextNode()) {
-           textNodes.push(walker.currentNode);
-       }
+    // ===== 第一遍：收集所有候选高亮位置 =====
+    var walker = document.createTreeWalker($textEl[0], NodeFilter.SHOW_TEXT, null, false);
+    var textNodes = [];
+    while (walker.nextNode()) {
+        textNodes.push(walker.currentNode);
+    }
 
-       var allCandidates = []; // { nodeIndex, node, span: {start,end,raw,word,lang,entry} }
+    var allCandidates = []; // { nodeIndex, node, span: {start,end,raw,word,lang,entry} }
 
-       for (var n = 0; n < textNodes.length; n++) {
-           var node = textNodes[n];
-           var parent = node.parentNode;
-           if (!parent) continue;
-           if (parent.classList && parent.classList.contains('learnlock-hl-word')) continue;
+    for (var n = 0; n < textNodes.length; n++) {
+        var node = textNodes[n];
+        var parent = node.parentNode;
+        if (!parent) continue;
+        if (parent.classList && parent.classList.contains('learnlock-hl-word')) continue;
 
-           var content = node.nodeValue || '';
-           if (content.length < 2) continue;
+        var content = node.nodeValue || '';
+        if (content.length < 2) continue;
 
-           var spans = [];
+        var spans = [];
 
-           if (lookupEn) {
-               var enRe = /[a-zA-Z][a-zA-Z'-]{1,30}[a-zA-Z]/g;
-               var match;
-               while ((match = enRe.exec(content)) !== null) {
-                   var w = match[0].toLowerCase().replace(/^['-]+|['-]+$/g, '');
-                   if (w.length < 3) continue;
-                   if (cleanText && cleanTextLower.indexOf(w) < 0) continue;
-                   var enEntry = lookupEn(w);
-                   if (!enEntry) continue;
-                   spans.push({
-                       start: match.index, end: match.index + match[0].length,
-                       raw: match[0], word: w, lang: 'en', entry: enEntry
-                   });
-               }
-           }
+        if (lookupEn) {
+            var enRe = /[a-zA-Z][a-zA-Z'-]{1,30}[a-zA-Z]/g;
+            var match;
+            while ((match = enRe.exec(content)) !== null) {
+                var w = match[0].toLowerCase().replace(/^['-]+|['-]+$/g, '');
+                if (w.length < 3) continue;
+                if (cleanText && cleanTextLower.indexOf(w) < 0) continue;
+                var enEntry = lookupEn(w);
+                if (!enEntry) continue;
+                spans.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    raw: match[0],
+                    word: w,
+                    lang: 'en',
+                    entry: enEntry,
+                });
+            }
+        }
 
-           if (lookupZh) {
-               for (var len = 4; len >= 2; len--) {
-                   for (var ci = 0; ci <= content.length - len; ci++) {
-                       var overlapped = false;
-                       for (var si = 0; si < spans.length; si++) {
-                           if (ci < spans[si].end && ci + len > spans[si].start) {
-                               overlapped = true; break;
-                           }
-                       }
-                       if (overlapped) continue;
+        if (lookupZh) {
+            for (var len = 4; len >= 2; len--) {
+                for (var ci = 0; ci <= content.length - len; ci++) {
+                    var overlapped = false;
+                    for (var si = 0; si < spans.length; si++) {
+                        if (ci < spans[si].end && ci + len > spans[si].start) {
+                            overlapped = true;
+                            break;
+                        }
+                    }
+                    if (overlapped) continue;
 
-                       var seg = content.substring(ci, ci + len);
-                       var allCjk = true;
-                       for (var cci = 0; cci < seg.length; cci++) {
-                           var code = seg.charCodeAt(cci);
-                           if (code < 0x4e00 || code > 0x9fff) { allCjk = false; break; }
-                       }
-                       if (!allCjk) continue;
-                       if (cleanText && cleanText.indexOf(seg) < 0) continue;
+                    var seg = content.substring(ci, ci + len);
+                    var allCjk = true;
+                    for (var cci = 0; cci < seg.length; cci++) {
+                        var code = seg.charCodeAt(cci);
+                        if (code < 0x4e00 || code > 0x9fff) {
+                            allCjk = false;
+                            break;
+                        }
+                    }
+                    if (!allCjk) continue;
+                    if (cleanText && cleanText.indexOf(seg) < 0) continue;
 
-                       var zhEntry = lookupZh(seg);
-                       if (!zhEntry) continue;
-                       spans.push({
-                           start: ci, end: ci + len,
-                           raw: seg, word: seg, lang: 'zh', entry: zhEntry
-                       });
-                   }
-               }
-           }
+                    var zhEntry = lookupZh(seg);
+                    if (!zhEntry) continue;
+                    spans.push({
+                        start: ci,
+                        end: ci + len,
+                        raw: seg,
+                        word: seg,
+                        lang: 'zh',
+                        entry: zhEntry,
+                    });
+                }
+            }
+        }
 
-           if (spans.length === 0) continue;
-           spans.sort(function (a, b) { return a.start - b.start; });
+        if (spans.length === 0) continue;
+        spans.sort(function (a, b) {
+            return a.start - b.start;
+        });
 
-           var merged = [];
-           var lastEnd = -1;
-           for (var mi = 0; mi < spans.length; mi++) {
-               if (spans[mi].start >= lastEnd) {
-                   merged.push(spans[mi]);
-                   lastEnd = spans[mi].end;
-               }
-           }
+        var merged = [];
+        var lastEnd = -1;
+        for (var mi = 0; mi < spans.length; mi++) {
+            if (spans[mi].start >= lastEnd) {
+                merged.push(spans[mi]);
+                lastEnd = spans[mi].end;
+            }
+        }
 
-           for (var ms = 0; ms < merged.length; ms++) {
-               allCandidates.push({
-                   nodeIndex: n,
-                   node: node,
-                   span: merged[ms]
-               });
-           }
-       }
+        for (var ms = 0; ms < merged.length; ms++) {
+            allCandidates.push({
+                nodeIndex: n,
+                node: node,
+                span: merged[ms],
+            });
+        }
+    }
 
-       if (allCandidates.length === 0) return;
+    if (allCandidates.length === 0) return;
 
-       // ===== 随机抽取 =====
-       var selected;
-       if (limitEnabled && allCandidates.length > limitValue) {
-           // Fisher-Yates 洗牌后取前 limitValue 个
-           var shuffled = allCandidates.slice();
-           for (var fi = shuffled.length - 1; fi > 0; fi--) {
-               var fj = Math.floor(Math.random() * (fi + 1));
-               var tmp = shuffled[fi];
-               shuffled[fi] = shuffled[fj];
-               shuffled[fj] = tmp;
-           }
-           selected = shuffled.slice(0, limitValue);
-       } else {
-           selected = allCandidates.slice();
-       }
+    // ===== 随机抽取 =====
+    var selected;
+    if (limitEnabled && allCandidates.length > limitValue) {
+        // Fisher-Yates 洗牌后取前 limitValue 个
+        var shuffled = allCandidates.slice();
+        for (var fi = shuffled.length - 1; fi > 0; fi--) {
+            var fj = Math.floor(Math.random() * (fi + 1));
+            var tmp = shuffled[fi];
+            shuffled[fi] = shuffled[fj];
+            shuffled[fj] = tmp;
+        }
+        selected = shuffled.slice(0, limitValue);
+    } else {
+        selected = allCandidates.slice();
+    }
 
-       // ===== 按 nodeIndex + start 排序（保证 DOM 替换顺序正确） =====
-       selected.sort(function (a, b) {
-           if (a.nodeIndex !== b.nodeIndex) return a.nodeIndex - b.nodeIndex;
-           return a.span.start - b.span.start;
-       });
+    // ===== 按 nodeIndex + start 排序（保证 DOM 替换顺序正确） =====
+    selected.sort(function (a, b) {
+        if (a.nodeIndex !== b.nodeIndex) return a.nodeIndex - b.nodeIndex;
+        return a.span.start - b.span.start;
+    });
 
-       // ===== 按 node 分组 =====
-       var grouped = {};
-       for (var gi = 0; gi < selected.length; gi++) {
-           var key = selected[gi].nodeIndex;
-           if (!grouped[key]) grouped[key] = [];
-           grouped[key].push(selected[gi].span);
-       }
+    // ===== 按 node 分组 =====
+    var grouped = {};
+    for (var gi = 0; gi < selected.length; gi++) {
+        var key = selected[gi].nodeIndex;
+        if (!grouped[key]) grouped[key] = [];
+        grouped[key].push(selected[gi].span);
+    }
 
-       // ===== 第二遍：替换 DOM =====
-       var nodeKeys = Object.keys(grouped).map(Number).sort(function (a, b) { return b - a; });
-       for (var nk = 0; nk < nodeKeys.length; nk++) {
-           var nodeIdx = nodeKeys[nk];
-           var targetNode = textNodes[nodeIdx];
-           var targetParent = targetNode.parentNode;
-           if (!targetParent) continue;
-           if (targetParent.classList && targetParent.classList.contains('learnlock-hl-word')) continue;
+    // ===== 第二遍：替换 DOM =====
+    var nodeKeys = Object.keys(grouped)
+        .map(Number)
+        .sort(function (a, b) {
+            return b - a;
+        });
+    for (var nk = 0; nk < nodeKeys.length; nk++) {
+        var nodeIdx = nodeKeys[nk];
+        var targetNode = textNodes[nodeIdx];
+        var targetParent = targetNode.parentNode;
+        if (!targetParent) continue;
+        if (targetParent.classList && targetParent.classList.contains('learnlock-hl-word'))
+            continue;
 
-           var targetContent = targetNode.nodeValue || '';
-           var nodeSpans = grouped[nodeIdx];
-           nodeSpans.sort(function (a, b) { return a.start - b.start; });
+        var targetContent = targetNode.nodeValue || '';
+        var nodeSpans = grouped[nodeIdx];
+        nodeSpans.sort(function (a, b) {
+            return a.start - b.start;
+        });
 
-           var frag = document.createDocumentFragment();
-           var cursor = 0;
+        var frag = document.createDocumentFragment();
+        var cursor = 0;
 
-           for (var s = 0; s < nodeSpans.length; s++) {
-               var sp = nodeSpans[s];
-               if (sp.start > cursor) {
-                   frag.appendChild(document.createTextNode(targetContent.substring(cursor, sp.start)));
-               }
+        for (var s = 0; s < nodeSpans.length; s++) {
+            var sp = nodeSpans[s];
+            if (sp.start > cursor) {
+                frag.appendChild(
+                    document.createTextNode(targetContent.substring(cursor, sp.start))
+                );
+            }
 
-               var isSolved = !!solvedSet[String(sp.word).toLowerCase()];
-               var span = document.createElement('span');
-               span.className = 'learnlock-hl-word' + (isSolved ? ' learnlock-hl-solved' : '');
-               span.setAttribute('data-hl-word', sp.word);
-               span.setAttribute('data-hl-lang', sp.lang);
-               span.setAttribute('data-hl-level', sp.entry.l || '');
-               span.setAttribute('data-hl-pos', sp.entry.p || '');
-               var trans = Array.isArray(sp.entry.t) ? sp.entry.t.slice(0, 3).join('，') : '';
-               span.setAttribute('data-hl-trans', trans);
-               span.title = (sp.entry.l || '') + ' ' + (sp.entry.p || '') + ' — ' + trans;
-               span.textContent = sp.raw;
-               frag.appendChild(span);
+            var isSolved = !!solvedSet[String(sp.word).toLowerCase()];
+            var span = document.createElement('span');
+            span.className = 'learnlock-hl-word' + (isSolved ? ' learnlock-hl-solved' : '');
+            span.setAttribute('data-hl-word', sp.word);
+            span.setAttribute('data-hl-lang', sp.lang);
+            span.setAttribute('data-hl-level', sp.entry.l || '');
+            span.setAttribute('data-hl-pos', sp.entry.p || '');
+            var trans = Array.isArray(sp.entry.t) ? sp.entry.t.slice(0, 3).join('，') : '';
+            span.setAttribute('data-hl-trans', trans);
+            span.title = (sp.entry.l || '') + ' ' + (sp.entry.p || '') + ' — ' + trans;
+            span.textContent = sp.raw;
+            frag.appendChild(span);
 
-               cursor = sp.end;
-           }
+            cursor = sp.end;
+        }
 
-           if (cursor < targetContent.length) {
-               frag.appendChild(document.createTextNode(targetContent.substring(cursor)));
-           }
+        if (cursor < targetContent.length) {
+            frag.appendChild(document.createTextNode(targetContent.substring(cursor)));
+        }
 
-           targetParent.replaceChild(frag, targetNode);
-       }
-   }
+        targetParent.replaceChild(frag, targetNode);
+    }
+}
 
-   function renderLockedMessage(messageId, session, settings) {
-       var refs = getDomRefs(messageId);
-       if (!refs) return;
+function renderLockedMessage(messageId, session, settings) {
+    var refs = getDomRefs(messageId);
+    if (!refs) return;
 
-       var $body = ensureCustomBody(refs);
-       var key = buildRenderKey(session);
-       session.renderKey = key;
+    var $body = ensureCustomBody(refs);
+    var key = buildRenderKey(session);
+    session.renderKey = key;
 
-       var highlightLimit = getHighlightLimit(settings);
+    var highlightLimit = getHighlightLimit(settings);
 
-       if (isComplete(session)) {
-           refs.$mes.removeClass('learnlock-hide-original');
-           refs.$text.removeClass('learnlock-force-hide');
-           $body.empty();
+    if (isComplete(session)) {
+        refs.$mes.removeClass('learnlock-hide-original');
+        refs.$text.removeClass('learnlock-force-hide');
+        $body.empty();
 
-           setTimeout(function () {
-               var freshRefs = getDomRefs(messageId);
-               if (!freshRefs) return;
-               if (freshRefs.$text.find('.learnlock-hl-word').length > 0) return;
-               injectHighlightsToRenderedDom(
-                   freshRefs.$text,
-                   session.solvedWords || [],
-                   messageId,
-                   highlightLimit
-               );
-           }, 120);
-           return;
-       }
+        setTimeout(function () {
+            var freshRefs = getDomRefs(messageId);
+            if (!freshRefs) return;
+            if (freshRefs.$text.find('.learnlock-hl-word').length > 0) return;
+            injectHighlightsToRenderedDom(
+                freshRefs.$text,
+                session.solvedWords || [],
+                messageId,
+                highlightLimit
+            );
+        }, 120);
+        return;
+    }
 
-       refs.$mes.addClass('learnlock-hide-original');
-       refs.$text.addClass('learnlock-force-hide');
-       $body.empty();
+    refs.$mes.addClass('learnlock-hide-original');
+    refs.$text.addClass('learnlock-force-hide');
+    $body.empty();
 
-       var $wrapper = $('<div class="learnlock-message-wrapper"></div>');
-       var $visible = $('<div class="learnlock-visible-text"></div>');
-       $wrapper.append($visible);
+    var $wrapper = $('<div class="learnlock-message-wrapper"></div>');
+    var $visible = $('<div class="learnlock-visible-text"></div>');
+    $wrapper.append($visible);
 
-       var parts = getVisibleParagraphs(session);
-       var totalCandidates = 0;
-       for (var tc = 0; tc < parts.length; tc += 1) {
-           totalCandidates += countCandidates(String(parts[tc] || ''));
-       }
-       var highlightState = createHighlightState(highlightLimit, totalCandidates);
-       for (var i = 0; i < parts.length; i += 1) {
-           var paragraphHtml = highlightParagraph(
-               String(parts[i] || ''),
-               session.currentChallenge,
-               session.solvedWords || [],
-               highlightState
-           );
-           var $p = $('<div class="learnlock-visible-paragraph"></div>');
-           $p.html(paragraphHtml || escapeHtml(String(parts[i] || '')));
-           $visible.append($p);
-       }
+    var parts = getVisibleParagraphs(session);
+    var totalCandidates = 0;
+    for (var tc = 0; tc < parts.length; tc += 1) {
+        totalCandidates += countCandidates(String(parts[tc] || ''));
+    }
+    var highlightState = createHighlightState(highlightLimit, totalCandidates);
+    for (var i = 0; i < parts.length; i += 1) {
+        var paragraphHtml = highlightParagraph(
+            String(parts[i] || ''),
+            session.currentChallenge,
+            session.solvedWords || [],
+            highlightState
+        );
+        var $p = $('<div class="learnlock-visible-paragraph"></div>');
+        $p.html(paragraphHtml || escapeHtml(String(parts[i] || '')));
+        $visible.append($p);
+    }
 
-       var hidden = getHiddenParagraphCount(session);
-       var unlocked = parts.length;
-       var $hint = $('<div class="learnlock-hint"></div>');
-       $hint.text('🔒 正文已锁定：已解锁 ' + String(unlocked) + ' 段，剩余 ' + String(hidden) + ' 段');
+    var hidden = getHiddenParagraphCount(session);
+    var unlocked = parts.length;
+    var $hint = $('<div class="learnlock-hint"></div>');
+    $hint.text('🔒 正文已锁定：已解锁 ' + String(unlocked) + ' 段，剩余 ' + String(hidden) + ' 段');
 
-       $wrapper.append($hint);
-       $body.append($wrapper);
-   }
+    $wrapper.append($hint);
+    $body.append($wrapper);
+}
 
 function applySm2FailWrapper(item) {
     sm2Fail(item);
@@ -963,7 +1167,7 @@ function addWrongBookItem(moduleName, payload, settings) {
             sm2Repetitions: 0,
             sm2IntervalDays: 0,
             dueAt: Date.now(),
-            lastReviewAt: 0
+            lastReviewAt: 0,
         };
         applySm2FailWrapper(item);
         list.push(item);
@@ -1040,8 +1244,10 @@ function renderDock(settings, forceUpdate) {
     var oldInput = document.getElementById('learnlock-floating-input');
     var oldInputValue = oldInput ? String(oldInput.value || '') : '';
     var oldFocused = !!(oldInput && document.activeElement === oldInput);
-    var oldSelectionStart = oldInput && Number.isFinite(oldInput.selectionStart) ? oldInput.selectionStart : -1;
-    var oldSelectionEnd = oldInput && Number.isFinite(oldInput.selectionEnd) ? oldInput.selectionEnd : -1;
+    var oldSelectionStart =
+        oldInput && Number.isFinite(oldInput.selectionStart) ? oldInput.selectionStart : -1;
+    var oldSelectionEnd =
+        oldInput && Number.isFinite(oldInput.selectionEnd) ? oldInput.selectionEnd : -1;
 
     if (hidden <= 0 && !session.finished) {
         if (!streamState.active) {
@@ -1057,8 +1263,8 @@ function renderDock(settings, forceUpdate) {
                 dockRenderKey = waitKey;
                 $dock.html(
                     '<div class="learnlock-floating-card">' +
-                    '  <div class="learnlock-floating-title">⌛ 正在生成中，内容解锁后即可阅读...</div>' +
-                    '</div>'
+                        '  <div class="learnlock-floating-title">⌛ 正在生成中，内容解锁后即可阅读...</div>' +
+                        '</div>'
                 );
             }
             return;
@@ -1074,18 +1280,13 @@ function renderDock(settings, forceUpdate) {
     var q = session.currentChallenge;
     var hint = '';
     if (session.wrongCount >= Number(settings.maxWrongAttemptsBeforeHint || 2)) {
-        var first = String(q.answer || '').trim().charAt(0);
+        var first = String(q.answer || '')
+            .trim()
+            .charAt(0);
         hint = '提示：答案首字母是 ' + (first || '-');
     }
 
-    var key = [
-        'quiz',
-        messageId,
-        unlockCount,
-        q.question,
-        q.answer,
-        session.wrongCount
-    ].join('|');
+    var key = ['quiz', messageId, unlockCount, q.question, q.answer, session.wrongCount].join('|');
 
     var challengeAudioWord = getChallengeAudioWord(q);
 
@@ -1098,23 +1299,40 @@ function renderDock(settings, forceUpdate) {
 
     dockRenderKey = key;
 
-    var html = ''
-        + '<div class="learnlock-floating-card">'
-        + '  <div class="learnlock-floating-title">🔒 学习解锁题（消息 #' + String(messageId) + '，每题解锁 ' + String(unlockCount) + ' 段）<span class="learnlock-challenge-source">[' + escapeHtml(String(q.source || 'unknown')) + ']</span></div>'
-        + '  <div class="learnlock-question">'
-        + (challengeAudioWord
-            ? ('      <button type="button" class="learnlock-challenge-audio-btn" data-audio-url="" data-tts-word="' + escapeHtml(challengeAudioWord) + '" data-tts-lang="en" title="播放题目发音">' + ICON_AUDIO + '</button>')
-            : '')
-        + '      <span class="learnlock-question-text">' + escapeHtml(String(q.question || '')) + '</span>'
-        + '  </div>'
-        + '  <form id="learnlock-floating-form" class="learnlock-answer-row" data-mid="' + String(messageId) + '" action="javascript:void(0)" autocomplete="off">'
-        + '      <input id="learnlock-floating-input" class="text_pole learnlock-answer-input" type="text" enterkeyhint="send" placeholder="输入答案后回车或点右侧按钮提交">'
-        + '      <button id="learnlock-floating-submit" type="submit" class="menu_button" aria-label="提交答案" title="提交答案">'
-        + '          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z"></path></svg>'
-        + '      </button>'
-        + '  </form>'
-        + '  <div class="learnlock-hint">' + escapeHtml(String(hint || '')) + '</div>'
-        + '</div>';
+    var html =
+        '' +
+        '<div class="learnlock-floating-card">' +
+        '  <div class="learnlock-floating-title">🔒 学习解锁题（消息 #' +
+        String(messageId) +
+        '，每题解锁 ' +
+        String(unlockCount) +
+        ' 段）<span class="learnlock-challenge-source">[' +
+        escapeHtml(String(q.source || 'unknown')) +
+        ']</span></div>' +
+        '  <div class="learnlock-question">' +
+        (challengeAudioWord
+            ? '      <button type="button" class="learnlock-challenge-audio-btn" data-audio-url="" data-tts-word="' +
+              escapeHtml(challengeAudioWord) +
+              '" data-tts-lang="en" title="播放题目发音">' +
+              ICON_AUDIO +
+              '</button>'
+            : '') +
+        '      <span class="learnlock-question-text">' +
+        escapeHtml(String(q.question || '')) +
+        '</span>' +
+        '  </div>' +
+        '  <form id="learnlock-floating-form" class="learnlock-answer-row" data-mid="' +
+        String(messageId) +
+        '" action="javascript:void(0)" autocomplete="off">' +
+        '      <input id="learnlock-floating-input" class="text_pole learnlock-answer-input" type="text" enterkeyhint="send" placeholder="输入答案后回车或点右侧按钮提交">' +
+        '      <button id="learnlock-floating-submit" type="submit" class="menu_button" aria-label="提交答案" title="提交答案">' +
+        '          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M9.9997 15.1709L19.1921 5.97852L20.6063 7.39273L9.9997 17.9993L3.63574 11.6354L5.04996 10.2212L9.9997 15.1709Z"></path></svg>' +
+        '      </button>' +
+        '  </form>' +
+        '  <div class="learnlock-hint">' +
+        escapeHtml(String(hint || '')) +
+        '</div>' +
+        '</div>';
 
     $dock.html(html);
 
@@ -1128,8 +1346,7 @@ function renderDock(settings, forceUpdate) {
         if (oldSelectionStart >= 0 && oldSelectionEnd >= 0) {
             try {
                 newInput.setSelectionRange(oldSelectionStart, oldSelectionEnd);
-            } catch (_e) {
-            }
+            } catch (_e) {}
         }
     }
 }
@@ -1141,13 +1358,13 @@ function renderSession(messageId, settings) {
     if (!msg || !session) return;
     if (!settings || !settings.enabled) return;
 
-       var hidden = getHiddenParagraphCount(session);
-       if (streamState.active && messageId === findLatestBotMessageId() && hidden > 0) {
-           setStreamLock(messageId, true, session, settings);
-       } else {
-           setStreamLock(messageId, false, session, settings);
-           renderLockedMessage(messageId, session, settings);
-       }
+    var hidden = getHiddenParagraphCount(session);
+    if (streamState.active && messageId === findLatestBotMessageId() && hidden > 0) {
+        setStreamLock(messageId, true, session, settings);
+    } else {
+        setStreamLock(messageId, false, session, settings);
+        renderLockedMessage(messageId, session, settings);
+    }
 }
 
 function clearAllLocksFromDomOnly() {
@@ -1186,7 +1403,7 @@ function submitAnswer(moduleName, getSettings, messageId, userAnswer) {
     if (!session || !session.currentChallenge) {
         pushDebugLog('submit-skip', {
             reason: 'no-session-or-challenge',
-            messageId: Number(messageId)
+            messageId: Number(messageId),
         });
         return;
     }
@@ -1197,7 +1414,7 @@ function submitAnswer(moduleName, getSettings, messageId, userAnswer) {
     var normalizedUser = normalizeAnswer(userAnswer);
     if (!normalizedUser) {
         pushDebugLog('submit-empty', {
-            messageId: Number(messageId)
+            messageId: Number(messageId),
         });
         toastr.info('请输入答案后再提交');
         return;
@@ -1247,11 +1464,14 @@ function submitAnswer(moduleName, getSettings, messageId, userAnswer) {
             beforeRevealed: Number(session.revealedParagraphs || 0),
             paragraphTotal: Number(session.paragraphs.length || 0),
             questionsAnswered: Number(session.questionsAnswered),
-            feedback: String(judgeResult.feedback || '')
+            feedback: String(judgeResult.feedback || ''),
         });
         session.wrongCount = 0;
         session.currentChallenge = null;
-        session.revealedParagraphs = Math.min(session.paragraphs.length, session.revealedParagraphs + unlockCount);
+        session.revealedParagraphs = Math.min(
+            session.paragraphs.length,
+            session.revealedParagraphs + unlockCount
+        );
 
         refreshChallenge(session, settings);
         if (isComplete(session)) toastr.success(judgeResult.feedback + ' 已全部解锁！');
@@ -1260,15 +1480,19 @@ function submitAnswer(moduleName, getSettings, messageId, userAnswer) {
         pushDebugLog('submit-wrong', {
             messageId: Number(messageId),
             wrongCountBefore: Number(session.wrongCount || 0),
-            feedback: String(judgeResult.feedback || '')
+            feedback: String(judgeResult.feedback || ''),
         });
         session.wrongCount += 1;
-        addWrongBookItem(moduleName, {
-            type: current.type,
-            question: current.question,
-            answer: current.answer,
-            userAnswer: userAnswer
-        }, settings);
+        addWrongBookItem(
+            moduleName,
+            {
+                type: current.type,
+                question: current.question,
+                answer: current.answer,
+                userAnswer: userAnswer,
+            },
+            settings
+        );
         toastr.warning(judgeResult.feedback);
     }
 
@@ -1312,7 +1536,7 @@ function installHardEnterGuard(moduleName, getSettings, ensureEnabledOrPauseUiOn
             target: describeElement(e.target),
             active: describeElement(document.activeElement),
             floatingTarget: isFloatingInputTarget(e),
-            composing: !!e.isComposing
+            composing: !!e.isComposing,
         });
 
         if (!isFloatingInputTarget(e)) return;
@@ -1332,7 +1556,7 @@ function installHardEnterGuard(moduleName, getSettings, ensureEnabledOrPauseUiOn
         var userAnswer = input ? String(input.value || '') : '';
         pushDebugLog('guard-submit-start', {
             messageId: messageId,
-            answerLength: userAnswer.length
+            answerLength: userAnswer.length,
         });
 
         submitAnswer(moduleName, getSettings, messageId, userAnswer);
@@ -1342,11 +1566,11 @@ function installHardEnterGuard(moduleName, getSettings, ensureEnabledOrPauseUiOn
             if (nextInput) {
                 nextInput.focus();
                 pushDebugLog('guard-refocus-ok', {
-                    active: describeElement(document.activeElement)
+                    active: describeElement(document.activeElement),
                 });
             } else {
                 pushDebugLog('guard-refocus-skip', {
-                    reason: 'input-not-found'
+                    reason: 'input-not-found',
                 });
             }
         }, 0);
@@ -1359,7 +1583,7 @@ function installHardEnterGuard(moduleName, getSettings, ensureEnabledOrPauseUiOn
         if (!isEnterEvent(e)) return;
         pushDebugLog('guard-keypress-capture-stop', {
             target: describeElement(e.target),
-            active: describeElement(document.activeElement)
+            active: describeElement(document.activeElement),
         });
         stopEvent(e);
         return false;
@@ -1370,7 +1594,7 @@ function installHardEnterGuard(moduleName, getSettings, ensureEnabledOrPauseUiOn
         if (!isEnterEvent(e)) return;
         pushDebugLog('guard-keyup-capture-stop', {
             target: describeElement(e.target),
-            active: describeElement(document.activeElement)
+            active: describeElement(document.activeElement),
         });
         stopEvent(e);
         return false;
@@ -1383,24 +1607,33 @@ function installHardEnterGuard(moduleName, getSettings, ensureEnabledOrPauseUiOn
     window.__learnlockHardEnterGuard = {
         keydown: onKeydownCapture,
         keypress: onKeypressCapture,
-        keyup: onKeyupCapture
+        keyup: onKeyupCapture,
     };
 }
 
 export function startMessageLocker(args) {
     // 暴露模块引用，供词卡渲染回调使用
-    import('./difficulty.js').then(function (mod) {
-        window.__learnlockDifficultyModule = mod;
-    }).catch(function () {});
-    import('./favorites.js').then(function (mod) {
-        window.__learnlockFavoritesModule = mod;
-        pushDebugLog('module-loaded', { module: 'favorites' });
-    }).catch(function (err) {
-        console.error('[LearnLock] favorites.js 加载失败:', err);
-    });
+    import('./difficulty.js')
+        .then(function (mod) {
+            window.__learnlockDifficultyModule = mod;
+        })
+        .catch(function () {});
+    import('./favorites.js')
+        .then(function (mod) {
+            window.__learnlockFavoritesModule = mod;
+            pushDebugLog('module-loaded', { module: 'favorites' });
+        })
+        .catch(function (err) {
+            console.error('[LearnLock] favorites.js 加载失败:', err);
+        });
 
-    var moduleName = (args && args.moduleName) ? args.moduleName : 'extension_learnlock_mvp';
-    var getSettings = (args && args.getSettings) ? args.getSettings : function () { return {}; };
+    var moduleName = args && args.moduleName ? args.moduleName : 'extension_learnlock_mvp';
+    var getSettings =
+        args && args.getSettings
+            ? args.getSettings
+            : function () {
+                  return {};
+              };
 
     ensureVocabLoaded().catch(function (e) {
         console.warn('[LearnLock] 词库预加载失败:', e);
@@ -1424,13 +1657,13 @@ export function startMessageLocker(args) {
             activeElement: describeElement(document.activeElement),
             streamState: {
                 active: !!streamState.active,
-                lastTickAt: Number(streamState.lastTickAt || 0)
+                lastTickAt: Number(streamState.lastTickAt || 0),
             },
             activeMessageId: Number(activeMessageId),
             dockExists: document.getElementById('learnlock-floating-dock') ? true : false,
             floatingInputExists: document.getElementById('learnlock-floating-input') ? true : false,
             floatingInputFocused: isFloatingInputFocused(),
-            sessionCount: sessions.size
+            sessionCount: sessions.size,
         };
     });
 
@@ -1464,7 +1697,10 @@ export function startMessageLocker(args) {
                 refreshChallenge(session, settings);
             } else if (session.paragraphs.length > 0) {
                 // 段落存在但全部已解锁，预备一道题等新段落出现
-                session.currentChallenge = buildFallbackChallenge();
+                session.currentChallenge = buildFallbackChallenge(
+                    settings,
+                    session.askedWords || []
+                );
             }
         }
 
@@ -1593,7 +1829,10 @@ export function startMessageLocker(args) {
         if (sessions.has(messageId)) {
             var oldSession = sessions.get(messageId);
             var currentMsg = (context.chat || [])[messageId];
-            if (currentMsg && String(currentMsg.mes || '') !== String(oldSession.fullTextRaw || '')) {
+            if (
+                currentMsg &&
+                String(currentMsg.mes || '') !== String(oldSession.fullTextRaw || '')
+            ) {
                 // 内容变了，重建 session
                 sessions.delete(messageId);
                 markManagedMessageId(messageId);
@@ -1617,7 +1856,12 @@ export function startMessageLocker(args) {
                     var hlRefs = getDomRefs(messageId);
                     if (!hlRefs) return;
                     if (hlRefs.$text.find('.learnlock-hl-word').length > 0) return;
-                    injectHighlightsToRenderedDom(hlRefs.$text, [], messageId, getHighlightLimit(settings));
+                    injectHighlightsToRenderedDom(
+                        hlRefs.$text,
+                        [],
+                        messageId,
+                        getHighlightLimit(settings)
+                    );
                 }, 250);
             }
             return;
@@ -1635,11 +1879,16 @@ export function startMessageLocker(args) {
                 var rRefs = getDomRefs(messageId);
                 if (!rRefs) return;
                 if (rRefs.$text.find('.learnlock-hl-word').length > 0) return;
-                injectHighlightsToRenderedDom(rRefs.$text, session.solvedWords || [], messageId, getHighlightLimit(settings));
+                injectHighlightsToRenderedDom(
+                    rRefs.$text,
+                    session.solvedWords || [],
+                    messageId,
+                    getHighlightLimit(settings)
+                );
             }, 150);
         }
     });
-    
+
     eventSource.on(eventTypes.CHAT_CHANGED, function () {
         chatContextId++;
         streamState.active = false;
@@ -1647,7 +1896,10 @@ export function startMessageLocker(args) {
         pushDebugLog('chat-changed', { newChatContextId: chatContextId });
     });
 
-    document.removeEventListener('learnlock:enabled-changed', window.__learnlockEnabledChangedListener);
+    document.removeEventListener(
+        'learnlock:enabled-changed',
+        window.__learnlockEnabledChangedListener
+    );
     window.__learnlockEnabledChangedListener = function (ev) {
         var enabled = Boolean(ev && ev.detail && ev.detail.enabled);
         if (!enabled) {
@@ -1660,7 +1912,10 @@ export function startMessageLocker(args) {
             renderDock(settings, true);
         }
     };
-    document.addEventListener('learnlock:enabled-changed', window.__learnlockEnabledChangedListener);
+    document.addEventListener(
+        'learnlock:enabled-changed',
+        window.__learnlockEnabledChangedListener
+    );
 
     $(document).off('click.learnlock_pick_session', '.mes');
     $(document).on('click.learnlock_pick_session', '.mes', function () {
@@ -1718,7 +1973,7 @@ export function startMessageLocker(args) {
         var diffMod = window.__learnlockDifficultyModule;
         var entry = null;
         if (diffMod) {
-            entry = (lang === 'en') ? diffMod.lookupEnWord(word) : diffMod.lookupZhWord(word);
+            entry = lang === 'en' ? diffMod.lookupEnWord(word) : diffMod.lookupZhWord(word);
         }
         if (!entry) {
             entry = { w: word, l: '', p: '', r: 0, t: [], a: [] };
@@ -1739,7 +1994,8 @@ export function startMessageLocker(args) {
                 var defEl = $card.find('.learnlock-wc-row');
                 defEl.each(function () {
                     var t = $(this).text();
-                    if (t.indexOf('英文释义') >= 0) extra.definition = t.replace(/^.*英文释义[：:]?\s*/, '');
+                    if (t.indexOf('英文释义') >= 0)
+                        extra.definition = t.replace(/^.*英文释义[：:]?\s*/, '');
                     if (t.indexOf('例句') >= 0) extra.example = t.replace(/^.*例句[：:]?\s*/, '');
                 });
                 addFavorite(entry, lang, extra);
@@ -1775,7 +2031,7 @@ export function startMessageLocker(args) {
         var entry = null;
         var diffMod = window.__learnlockDifficultyModule;
         if (diffMod) {
-            entry = (lang === 'en') ? diffMod.lookupEnWord(word) : diffMod.lookupZhWord(word);
+            entry = lang === 'en' ? diffMod.lookupEnWord(word) : diffMod.lookupZhWord(word);
         }
 
         if (!entry) {
@@ -1783,9 +2039,11 @@ export function startMessageLocker(args) {
                 w: word,
                 l: $el.attr('data-hl-level') || '',
                 p: $el.attr('data-hl-pos') || '',
-                t: ($el.attr('data-hl-trans') || '').split('，').filter(function (x) { return x; }),
+                t: ($el.attr('data-hl-trans') || '').split('，').filter(function (x) {
+                    return x;
+                }),
                 a: [],
-                r: 0
+                r: 0,
             };
         }
 
@@ -1795,12 +2053,14 @@ export function startMessageLocker(args) {
         $card.html(cardHtml);
         $el.after($card);
 
-        dictLookup(word, lang).then(function (info) {
-            if (!info || !info.found) return;
-            $card.html(buildWordCardHtml(entry, lang, info));
-        }).catch(function (err) {
-            pushDebugLog('dict-lookup-fail', { word: word, lang: lang, error: String(err) });
-        });
+        dictLookup(word, lang)
+            .then(function (info) {
+                if (!info || !info.found) return;
+                $card.html(buildWordCardHtml(entry, lang, info));
+            })
+            .catch(function (err) {
+                pushDebugLog('dict-lookup-fail', { word: word, lang: lang, error: String(err) });
+            });
     });
 
     $(document).off('click.learnlock_close_card');
@@ -1810,7 +2070,11 @@ export function startMessageLocker(args) {
         // 面板内错题/收藏区域的点击不关闭词卡
         if ($(e.target).closest('.ll-wb-item-content').length > 0) return;
         if ($(e.target).closest('.ll-fav-item').length > 0) return;
-        if ($(e.target).closest('#learnlock-panel').length > 0 && $(e.target).closest('.learnlock-panel-card').length > 0) return;
+        if (
+            $(e.target).closest('#learnlock-panel').length > 0 &&
+            $(e.target).closest('.learnlock-panel-card').length > 0
+        )
+            return;
         $('.learnlock-word-card-wrap').remove();
     });
 
@@ -1841,31 +2105,37 @@ export function startMessageLocker(args) {
     });
 
     $(document).off('click.learnlock_challenge_audio', '.learnlock-challenge-audio-btn');
-    $(document).on('click.learnlock_challenge_audio', '.learnlock-challenge-audio-btn', async function (e) {
-        e.stopPropagation();
-        e.preventDefault();
+    $(document).on(
+        'click.learnlock_challenge_audio',
+        '.learnlock-challenge-audio-btn',
+        async function (e) {
+            e.stopPropagation();
+            e.preventDefault();
 
-        var $btn = $(this);
-        var apiUrl = $btn.attr('data-audio-url') || '';
-        var ttsWord = $btn.attr('data-tts-word') || '';
-        var ttsLang = $btn.attr('data-tts-lang') || 'en';
+            var $btn = $(this);
+            var apiUrl = $btn.attr('data-audio-url') || '';
+            var ttsWord = $btn.attr('data-tts-word') || '';
+            var ttsLang = $btn.attr('data-tts-lang') || 'en';
 
-        if (!ttsWord) return;
+            if (!ttsWord) return;
 
-        if (!apiUrl) {
-            try {
-                var info = await dictLookup(ttsWord, 'en');
-                if (info && info.audioUrl) {
-                    apiUrl = String(info.audioUrl);
-                    $btn.attr('data-audio-url', apiUrl);
-                }
-            } catch (_) {}
+            if (!apiUrl) {
+                try {
+                    var info = await dictLookup(ttsWord, 'en');
+                    if (info && info.audioUrl) {
+                        apiUrl = String(info.audioUrl);
+                        $btn.attr('data-audio-url', apiUrl);
+                    }
+                } catch (_) {}
+            }
+
+            playAudioChain(apiUrl, ttsWord, ttsLang);
         }
-
-        playAudioChain(apiUrl, ttsWord, ttsLang);
-    });
+    );
 
     installHardEnterGuard(moduleName, getSettings, ensureEnabledOrPauseUiOnly);
 
-    console.log('[LearnLockMVP] message-locker loaded (lock persists after disable, no message metadata writes)');
+    console.log(
+        '[LearnLockMVP] message-locker loaded (lock persists after disable, no message metadata writes)'
+    );
 }

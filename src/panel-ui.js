@@ -1,7 +1,12 @@
 import { getFavorites, removeFavorite, removeFavorites } from './favorites.js';
 import {
-    ICON_COPY, ICON_TRASH, ICON_SELECT, ICON_UNCHECK,
-    ICON_SELECTALL, ICON_AUDIO, ICON_FAV_FILLED
+    ICON_COPY,
+    ICON_TRASH,
+    ICON_SELECT,
+    ICON_UNCHECK,
+    ICON_SELECTALL,
+    ICON_AUDIO,
+    ICON_FAV_FILLED,
 } from './icons.js';
 import { lookup as dictLookup } from './dict-lookup.js';
 import { lookupEnWord, lookupZhWord } from './difficulty.js';
@@ -12,7 +17,7 @@ function speakWordTTS(word, lang) {
     if (!word || typeof window.speechSynthesis === 'undefined') return;
     window.speechSynthesis.cancel();
     var utterance = new SpeechSynthesisUtterance(String(word));
-    utterance.lang = (lang === 'zh') ? 'zh-CN' : 'en-US';
+    utterance.lang = lang === 'zh' ? 'zh-CN' : 'en-US';
     utterance.rate = 0.85;
     utterance.volume = 0.9;
     window.speechSynthesis.speak(utterance);
@@ -23,8 +28,12 @@ function playAudioChain(apiUrl, ttsWord, ttsLang) {
         try {
             var audio = new Audio(apiUrl);
             audio.volume = 0.85;
-            audio.play().catch(function () { speakWordTTS(ttsWord, ttsLang); });
-        } catch (_) { speakWordTTS(ttsWord, ttsLang); }
+            audio.play().catch(function () {
+                speakWordTTS(ttsWord, ttsLang);
+            });
+        } catch (_) {
+            speakWordTTS(ttsWord, ttsLang);
+        }
     } else {
         speakWordTTS(ttsWord, ttsLang);
     }
@@ -43,8 +52,14 @@ export function mountPanelButton(moduleName, getSettings) {
     var attempts = 0;
     var timer = setInterval(function () {
         attempts++;
-        if (attempts > 60) { clearInterval(timer); return; }
-        if ($('#learnlock-panel-entry').length > 0) { clearInterval(timer); return; }
+        if (attempts > 60) {
+            clearInterval(timer);
+            return;
+        }
+        if ($('#learnlock-panel-entry').length > 0) {
+            clearInterval(timer);
+            return;
+        }
 
         var $menu = $('#extensionsMenu');
         if ($menu.length === 0) return;
@@ -59,9 +74,9 @@ export function mountPanelButton(moduleName, getSettings) {
 
         var $btn = $(
             '<div id="learnlock-panel-entry" class="interactable" tabindex="0" title="学习面板">' +
-            '  <i class="fa-solid fa-graduation-cap"></i>' +
-            '  <span>学习面板</span>' +
-            '</div>'
+                '  <i class="fa-solid fa-graduation-cap"></i>' +
+                '  <span>学习面板</span>' +
+                '</div>'
         );
 
         if ($target && $target.length > 0) {
@@ -76,21 +91,32 @@ export function mountPanelButton(moduleName, getSettings) {
         }
 
         clearInterval(timer);
-        $btn.on('click', function () { openPanel(); });
+        $btn.on('click', function () {
+            openPanel();
+        });
     }, 500);
 
-    document.addEventListener('learnlock:open-panel', function () { openPanel(); });
+    document.addEventListener('learnlock:open-panel', function () {
+        openPanel();
+    });
 
     $(document).off('click.ll_panel_overlay', '#learnlock-panel-overlay');
     $(document).on('click.ll_panel_overlay', '#learnlock-panel-overlay', function (e) {
         if ($(e.target).is('#learnlock-panel-overlay')) closePanel();
     });
     $(document).off('click.ll_panel_close', '#learnlock-panel-close');
-    $(document).on('click.ll_panel_close', '#learnlock-panel-close', function () { closePanel(); });
+    $(document).on('click.ll_panel_close', '#learnlock-panel-close', function () {
+        closePanel();
+    });
 }
 
 function esc(s) {
-    return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    return String(s || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function formatDue(dueAt) {
@@ -109,9 +135,9 @@ function hasCjk(text) {
 
 function deriveWrongBookCardMeta(item) {
     var meta = { word: '', lang: 'en' };
-    var type = String(item && item.type || '');
-    var question = String(item && item.question || '');
-    var answer = String(item && item.answer || '');
+    var type = String((item && item.type) || '');
+    var question = String((item && item.question) || '');
+    var answer = String((item && item.answer) || '');
 
     if (type === 'en_to_cn') {
         var enMatch = question.match(/[：:]\s*(.+)$/);
@@ -140,10 +166,14 @@ function deriveWrongBookCardMeta(item) {
     return meta;
 }
 
-function ctx() { return SillyTavern.getContext(); }
+function ctx() {
+    return SillyTavern.getContext();
+}
 
 function saveSettings() {
-    try { ctx().saveSettingsDebounced(); } catch (_) {}
+    try {
+        ctx().saveSettingsDebounced();
+    } catch (_) {}
 }
 
 /* ========== 错题本 ========== */
@@ -151,8 +181,12 @@ function saveSettings() {
 function buildWrongBookTab(settings) {
     var wb = Array.isArray(settings.wrongBook) ? settings.wrongBook : [];
     var now = Date.now();
-    var dueCount = wb.filter(function (x) { return Number(x.dueAt || 0) <= now; }).length;
-    var sorted = wb.slice().sort(function (a, b) { return Number(a.dueAt || 0) - Number(b.dueAt || 0); });
+    var dueCount = wb.filter(function (x) {
+        return Number(x.dueAt || 0) <= now;
+    }).length;
+    var sorted = wb.slice().sort(function (a, b) {
+        return Number(a.dueAt || 0) - Number(b.dueAt || 0);
+    });
 
     var h = '';
 
@@ -162,15 +196,25 @@ function buildWrongBookTab(settings) {
     h += '</div>';
 
     h += '<div class="ll-wb-toolbar">';
-    h += '  <input id="llp-search" class="text_pole ll-search-input" type="text" placeholder="搜索错题...">';
-    h += '  <button id="llp-select-toggle" class="menu_button ll-icon-btn" title="选择模式">' + ICON_SELECT + '</button>';
+    h +=
+        '  <input id="llp-search" class="text_pole ll-search-input" type="text" placeholder="搜索错题...">';
+    h +=
+        '  <button id="llp-select-toggle" class="menu_button ll-icon-btn" title="选择模式">' +
+        ICON_SELECT +
+        '</button>';
     h += '</div>';
 
     h += '<div class="ll-inline-hint">点击错题正文即可展开对应的词卡</div>';
 
     h += '<div id="llp-select-actions" class="ll-select-actions" style="display:none;">';
-    h += '  <button id="llp-select-all" class="menu_button ll-icon-btn" title="全选">' + ICON_SELECTALL + ' 全选</button>';
-    h += '  <button id="llp-delete-selected" class="menu_button ll-icon-btn ll-btn-danger" title="删除选中">' + ICON_TRASH + ' 删除</button>';
+    h +=
+        '  <button id="llp-select-all" class="menu_button ll-icon-btn" title="全选">' +
+        ICON_SELECTALL +
+        ' 全选</button>';
+    h +=
+        '  <button id="llp-delete-selected" class="menu_button ll-icon-btn ll-btn-danger" title="删除选中">' +
+        ICON_TRASH +
+        ' 删除</button>';
     h += '  <span id="llp-select-count" class="ll-select-count">已选 0</span>';
     h += '</div>';
 
@@ -182,20 +226,53 @@ function buildWrongBookTab(settings) {
             var it = sorted[j];
             var due = Number(it.dueAt || 0) <= now;
             var key = String(it.key || '');
-            var searchKey = (String(it.question || '') + ' ' + String(it.answer || '')).toLowerCase();
+            var searchKey = (
+                String(it.question || '') +
+                ' ' +
+                String(it.answer || '')
+            ).toLowerCase();
             var cardMeta = deriveWrongBookCardMeta(it);
-            h += '<div class="ll-wb-item' + (due ? ' ll-wb-due' : '') + '"'
-                + ' data-wb-key="' + esc(key) + '"'
-                + ' data-sk="' + esc(searchKey) + '"'
-                + ' data-wb-type="' + esc(String(it.type || '')) + '"'
-                + ' data-wb-card-word="' + esc(cardMeta.word) + '"'
-                + ' data-wb-card-lang="' + esc(cardMeta.lang) + '">';
+            h +=
+                '<div class="ll-wb-item' +
+                (due ? ' ll-wb-due' : '') +
+                '"' +
+                ' data-wb-key="' +
+                esc(key) +
+                '"' +
+                ' data-sk="' +
+                esc(searchKey) +
+                '"' +
+                ' data-wb-type="' +
+                esc(String(it.type || '')) +
+                '"' +
+                ' data-wb-card-word="' +
+                esc(cardMeta.word) +
+                '"' +
+                ' data-wb-card-lang="' +
+                esc(cardMeta.lang) +
+                '">';
             h += '<div class="ll-wb-item-row">';
-            h += '<span class="ll-wb-checkbox" style="display:none;" data-wb-key="' + esc(key) + '">' + ICON_UNCHECK + '</span>';
+            h +=
+                '<span class="ll-wb-checkbox" style="display:none;" data-wb-key="' +
+                esc(key) +
+                '">' +
+                ICON_UNCHECK +
+                '</span>';
             h += '<div class="ll-wb-item-content">';
             h += '<div><b>Q:</b> ' + esc(it.question) + '</div>';
             h += '<div><b>A:</b> ' + esc(it.answer) + '</div>';
-            h += '<div class="ll-wb-meta">错 ' + Number(it.wrongCount || 0) + ' 次 · 连对 ' + Number(it.sm2Repetitions || 0) + ' · 间隔 ' + Number(it.sm2IntervalDays || 0) + ' 天 · Ease ' + Number(it.sm2Ease || 2.5).toFixed(1) + ' · ' + esc(formatDue(it.dueAt)) + '</div>';
+            h +=
+                '<div class="ll-wb-meta">错 ' +
+                Number(it.wrongCount || 0) +
+                ' 次 · 连对 ' +
+                Number(it.sm2Repetitions || 0) +
+                ' · 间隔 ' +
+                Number(it.sm2IntervalDays || 0) +
+                ' 天 · Ease ' +
+                Number(it.sm2Ease || 2.5).toFixed(1) +
+                ' · ' +
+                esc(formatDue(it.dueAt)) +
+                '</div>';
             h += '</div></div></div>';
         }
     }
@@ -226,21 +303,40 @@ function buildFavoritesTab() {
             h += '  <span class="ll-fav-word">' + esc(fav.word) + '</span>';
             if (fav.level) h += ' <span class="learnlock-wc-level">' + esc(fav.level) + '</span>';
             if (fav.pos) h += ' <span class="learnlock-wc-pos">' + esc(fav.pos) + '</span>';
-            if (fav.phonetic) h += ' <span class="learnlock-wc-phonetic">' + esc(fav.phonetic) + '</span>';
+            if (fav.phonetic)
+                h += ' <span class="learnlock-wc-phonetic">' + esc(fav.phonetic) + '</span>';
             var favAudioWord = fav.word;
-            if (fav.lang === 'zh' && Array.isArray(fav.translations) && fav.translations.length > 0) {
+            if (
+                fav.lang === 'zh' &&
+                Array.isArray(fav.translations) &&
+                fav.translations.length > 0
+            ) {
                 favAudioWord = fav.translations[0];
             }
-            h += ' <button class="learnlock-wc-audio-btn ll-fav-audio"'
-                + ' data-audio-url="' + esc(fav.audioUrl || '') + '"'
-                + ' data-tts-word="' + esc(favAudioWord) + '"'
-                + ' data-tts-lang="en"'
-                + ' title="播放发音">' + ICON_AUDIO + '</button>';
-            h += '  <button class="ll-fav-remove menu_button ll-icon-btn" data-fav-key="' + esc(fav.key) + '" title="取消收藏">' + ICON_TRASH + '</button>';
+            h +=
+                ' <button class="ll-fav-audio"' +
+                ' data-audio-url="' +
+                esc(fav.audioUrl || '') +
+                '"' +
+                ' data-tts-word="' +
+                esc(favAudioWord) +
+                '"' +
+                ' data-tts-lang="en"' +
+                ' title="播放发音">' +
+                ICON_AUDIO +
+                '</button>';
+            h +=
+                '  <button class="ll-fav-remove menu_button ll-icon-btn" data-fav-key="' +
+                esc(fav.key) +
+                '" title="取消收藏">' +
+                ICON_TRASH +
+                '</button>';
             h += '</div>';
             if (trans) h += '<div class="ll-fav-trans">' + esc(trans) + '</div>';
-            if (fav.definition) h += '<div class="ll-fav-row"><b>释义：</b>' + esc(fav.definition) + '</div>';
-            if (fav.example) h += '<div class="ll-fav-row"><b>例句：</b><i>' + esc(fav.example) + '</i></div>';
+            if (fav.definition)
+                h += '<div class="ll-fav-row"><b>释义：</b>' + esc(fav.definition) + '</div>';
+            if (fav.example)
+                h += '<div class="ll-fav-row"><b>例句：</b><i>' + esc(fav.example) + '</i></div>';
             h += '</div>';
         }
     }
@@ -263,7 +359,14 @@ function buildSettingsTab(settings) {
     var themes = getThemeList();
     for (var ti = 0; ti < themes.length; ti++) {
         var sel = settings.highlightTheme === themes[ti].key ? ' selected' : '';
-        h += '<option value="' + themes[ti].key + '"' + sel + '>' + esc(themes[ti].name) + '</option>';
+        h +=
+            '<option value="' +
+            themes[ti].key +
+            '"' +
+            sel +
+            '>' +
+            esc(themes[ti].name) +
+            '</option>';
     }
     h += '</select></div>';
 
@@ -284,7 +387,14 @@ function buildSettingsTab(settings) {
 
     h += '<div class="ll-row"><label>词汇难度</label>';
     h += '<select id="llp-difficulty" class="text_pole">';
-    var levels = [['beginner','入门 A1'],['elementary','基础 A1~A2'],['intermediate','中级 A1~B1'],['upper','中高级 A2~B2'],['advanced','高级 B1~C1'],['challenge','挑战 B2~C1']];
+    var levels = [
+        ['beginner', '入门 A1'],
+        ['elementary', '基础 A1~A2'],
+        ['intermediate', '中级 A1~B1'],
+        ['upper', '中高级 A2~B2'],
+        ['advanced', '高级 B1~C1'],
+        ['challenge', '挑战 B2~C1'],
+    ];
     for (var li = 0; li < levels.length; li++) {
         var sel = settings.difficultyLevel === levels[li][0] ? ' selected' : '';
         h += '<option value="' + levels[li][0] + '"' + sel + '>' + levels[li][1] + '</option>';
@@ -293,28 +403,52 @@ function buildSettingsTab(settings) {
 
     h += '<div class="ll-row"><label>判题模式</label>';
     h += '<select id="llp-synonym" class="text_pole">';
-    h += '<option value="loose"' + (settings.synonymMode === 'loose' ? ' selected' : '') + '>宽松（同义词判对）</option>';
-    h += '<option value="strict"' + (settings.synonymMode === 'strict' ? ' selected' : '') + '>严格（只认标准答案）</option>';
+    h +=
+        '<option value="loose"' +
+        (settings.synonymMode === 'loose' ? ' selected' : '') +
+        '>宽松（同义词判对）</option>';
+    h +=
+        '<option value="strict"' +
+        (settings.synonymMode === 'strict' ? ' selected' : '') +
+        '>严格（只认标准答案）</option>';
     h += '</select></div>';
 
     h += '<div class="ll-row"><label>启用题型</label><div class="ll-checks">';
-    var types = settings.challengeTypes || ['cn_to_en','en_to_cn'];
-    h += '<label><input type="checkbox" id="llp-cn2en"' + (types.indexOf('cn_to_en') >= 0 ? ' checked' : '') + '> 中译英</label>';
-    h += '<label><input type="checkbox" id="llp-en2cn"' + (types.indexOf('en_to_cn') >= 0 ? ' checked' : '') + '> 英译中</label>';
+    var types = settings.challengeTypes || ['cn_to_en', 'en_to_cn'];
+    h +=
+        '<label><input type="checkbox" id="llp-cn2en"' +
+        (types.indexOf('cn_to_en') >= 0 ? ' checked' : '') +
+        '> 中译英</label>';
+    h +=
+        '<label><input type="checkbox" id="llp-en2cn"' +
+        (types.indexOf('en_to_cn') >= 0 ? ' checked' : '') +
+        '> 英译中</label>';
     h += '</div></div>';
 
     h += '<div class="ll-row"><label>错题优先概率 %</label>';
-    h += '<input id="llp-wb-priority" class="text_pole" type="number" min="0" max="100" step="5" value="' + Number(settings.wrongBookPriority || 30) + '"></div>';
+    h +=
+        '<input id="llp-wb-priority" class="text_pole" type="number" min="0" max="100" step="5" value="' +
+        Number(settings.wrongBookPriority || 30) +
+        '"></div>';
 
     h += '<div class="ll-row"><label>每题解锁段数</label>';
-    h += '<input id="llp-unlock" class="text_pole" type="number" min="1" max="50" value="' + Number(settings.unlockParagraphsPerQuestion || 1) + '"></div>';
+    h +=
+        '<input id="llp-unlock" class="text_pole" type="number" min="1" max="50" value="' +
+        Number(settings.unlockParagraphsPerQuestion || 1) +
+        '"></div>';
 
     h += '<div class="ll-row"><label>每条消息词卡上限</label>';
-    h += '<input id="llp-max-hl" class="text_pole" type="number" min="0" max="300" value="' + Number(settings.maxWordCardsPerMessage || 0) + '">';
+    h +=
+        '<input id="llp-max-hl" class="text_pole" type="number" min="0" max="300" value="' +
+        Number(settings.maxWordCardsPerMessage || 0) +
+        '">';
     h += '<span class="ll-inline-hint">0 表示不限制；词卡会随机分散在正文中</span></div>';
 
     h += '<div class="ll-row"><label>错误几次后提示</label>';
-    h += '<input id="llp-max-wrong" class="text_pole" type="number" min="1" max="10" value="' + Number(settings.maxWrongAttemptsBeforeHint || 2) + '"></div>';
+    h +=
+        '<input id="llp-max-wrong" class="text_pole" type="number" min="1" max="10" value="' +
+        Number(settings.maxWrongAttemptsBeforeHint || 2) +
+        '"></div>';
 
     h += '</div></details>';
 
@@ -322,12 +456,21 @@ function buildSettingsTab(settings) {
     h += '<summary><b>🔧 高级设置</b></summary>';
     h += '<div class="ll-panel-section-body">';
     h += '<div class="ll-row"><label>错题本上限</label>';
-    h += '<input id="llp-wb-max" class="text_pole" type="number" min="20" max="2000" step="10" value="' + Number(settings.wrongBookMaxItems || 200) + '"></div>';
+    h +=
+        '<input id="llp-wb-max" class="text_pole" type="number" min="20" max="2000" step="10" value="' +
+        Number(settings.wrongBookMaxItems || 200) +
+        '"></div>';
 
-    h += '<div class="ll-row"><label><input type="checkbox" id="llp-only-due"' + (settings.wrongBookOnlyDue ? ' checked' : '') + '> 只显示已到期错题</label></div>';
+    h +=
+        '<div class="ll-row"><label><input type="checkbox" id="llp-only-due"' +
+        (settings.wrongBookOnlyDue ? ' checked' : '') +
+        '> 只显示已到期错题</label></div>';
 
     h += '<div class="ll-row-full"><label>忽略正则（每行一条）</label>';
-    h += '<textarea id="llp-ignore-regex" class="text_pole" rows="3" placeholder="每行一个正则表达式">' + esc(settings.ignoreRegexLines || '') + '</textarea></div>';
+    h +=
+        '<textarea id="llp-ignore-regex" class="text_pole" rows="3" placeholder="每行一个正则表达式">' +
+        esc(settings.ignoreRegexLines || '') +
+        '</textarea></div>';
 
     h += '</div></details>';
 
@@ -336,10 +479,17 @@ function buildSettingsTab(settings) {
     h += '<div class="ll-panel-section-body">';
     h += '<div id="llp-debug-status" class="learnlock-hint">日志持续记录中</div>';
     h += '<div class="ll-row" style="gap:6px;flex-wrap:wrap;">';
-    h += '<button id="llp-dbg-copy" class="menu_button ll-icon-btn">' + ICON_COPY + ' 复制报告</button>';
-    h += '<button id="llp-dbg-clear" class="menu_button ll-icon-btn">' + ICON_TRASH + ' 清空日志</button>';
+    h +=
+        '<button id="llp-dbg-copy" class="menu_button ll-icon-btn">' +
+        ICON_COPY +
+        ' 复制报告</button>';
+    h +=
+        '<button id="llp-dbg-clear" class="menu_button ll-icon-btn">' +
+        ICON_TRASH +
+        ' 清空日志</button>';
     h += '</div>';
-    h += '<textarea id="llp-dbg-output" class="text_pole" rows="6" style="width:100%;margin-top:8px;font-family:monospace;font-size:0.82em;" readonly></textarea>';
+    h +=
+        '<textarea id="llp-dbg-output" class="text_pole" rows="6" style="width:100%;margin-top:8px;font-family:monospace;font-size:0.82em;" readonly></textarea>';
     h += '</div></details>';
 
     return h;
@@ -363,15 +513,39 @@ function openPanel() {
     h += '</div>';
 
     h += '<div class="ll-tab-bar">';
-    h += '  <button class="ll-tab-btn' + (_currentTab === 'wrongbook' ? ' ll-tab-active' : '') + '" data-ll-tab="wrongbook">📝 错题本</button>';
-    h += '  <button class="ll-tab-btn' + (_currentTab === 'favorites' ? ' ll-tab-active' : '') + '" data-ll-tab="favorites">⭐ 收藏</button>';
-    h += '  <button class="ll-tab-btn' + (_currentTab === 'settings' ? ' ll-tab-active' : '') + '" data-ll-tab="settings">⚙️ 设置</button>';
+    h +=
+        '  <button class="ll-tab-btn' +
+        (_currentTab === 'wrongbook' ? ' ll-tab-active' : '') +
+        '" data-ll-tab="wrongbook">📝 错题本</button>';
+    h +=
+        '  <button class="ll-tab-btn' +
+        (_currentTab === 'favorites' ? ' ll-tab-active' : '') +
+        '" data-ll-tab="favorites">⭐ 收藏</button>';
+    h +=
+        '  <button class="ll-tab-btn' +
+        (_currentTab === 'settings' ? ' ll-tab-active' : '') +
+        '" data-ll-tab="settings">⚙️ 设置</button>';
     h += '</div>';
 
     h += '<div class="learnlock-panel-body">';
-    h += '<div class="ll-tab-content' + (_currentTab === 'wrongbook' ? ' ll-tab-visible' : '') + '" data-ll-tab="wrongbook">' + buildWrongBookTab(settings) + '</div>';
-    h += '<div class="ll-tab-content' + (_currentTab === 'favorites' ? ' ll-tab-visible' : '') + '" data-ll-tab="favorites">' + buildFavoritesTab() + '</div>';
-    h += '<div class="ll-tab-content' + (_currentTab === 'settings' ? ' ll-tab-visible' : '') + '" data-ll-tab="settings">' + buildSettingsTab(settings) + '</div>';
+    h +=
+        '<div class="ll-tab-content' +
+        (_currentTab === 'wrongbook' ? ' ll-tab-visible' : '') +
+        '" data-ll-tab="wrongbook">' +
+        buildWrongBookTab(settings) +
+        '</div>';
+    h +=
+        '<div class="ll-tab-content' +
+        (_currentTab === 'favorites' ? ' ll-tab-visible' : '') +
+        '" data-ll-tab="favorites">' +
+        buildFavoritesTab() +
+        '</div>';
+    h +=
+        '<div class="ll-tab-content' +
+        (_currentTab === 'settings' ? ' ll-tab-visible' : '') +
+        '" data-ll-tab="settings">' +
+        buildSettingsTab(settings) +
+        '</div>';
     h += '</div>';
 
     h += '</div></div>';
@@ -458,28 +632,34 @@ function bindAllPanelEvents() {
         switchTab($(this).attr('data-ll-tab'));
     });
 
-    $('#llp-search').off('input').on('input', function () {
-        var kw = String($(this).val() || '').toLowerCase().trim();
-        $('#llp-wb-list .ll-wb-item').each(function () {
-            var sk = $(this).attr('data-sk') || '';
-            $(this).toggle(!kw || sk.indexOf(kw) >= 0);
+    $('#llp-search')
+        .off('input')
+        .on('input', function () {
+            var kw = String($(this).val() || '')
+                .toLowerCase()
+                .trim();
+            $('#llp-wb-list .ll-wb-item').each(function () {
+                var sk = $(this).attr('data-sk') || '';
+                $(this).toggle(!kw || sk.indexOf(kw) >= 0);
+            });
         });
-    });
 
-    $('#llp-select-toggle').off('click').on('click', function () {
-        _selectMode = !_selectMode;
-        _selectedKeys = {};
-        if (_selectMode) {
-            $('#llp-select-actions').show();
-            $('.ll-wb-checkbox').show();
-            $(this).addClass('ll-btn-active');
-        } else {
-            $('#llp-select-actions').hide();
-            $('.ll-wb-checkbox').hide().html(ICON_UNCHECK);
-            $(this).removeClass('ll-btn-active');
-        }
-        updateSelectCount();
-    });
+    $('#llp-select-toggle')
+        .off('click')
+        .on('click', function () {
+            _selectMode = !_selectMode;
+            _selectedKeys = {};
+            if (_selectMode) {
+                $('#llp-select-actions').show();
+                $('.ll-wb-checkbox').show();
+                $(this).addClass('ll-btn-active');
+            } else {
+                $('#llp-select-actions').hide();
+                $('.ll-wb-checkbox').hide().html(ICON_UNCHECK);
+                $(this).removeClass('ll-btn-active');
+            }
+            updateSelectCount();
+        });
 
     $(document).off('click.ll_wb_check', '.ll-wb-checkbox');
     $(document).on('click.ll_wb_check', '.ll-wb-checkbox', function (e) {
@@ -495,42 +675,51 @@ function bindAllPanelEvents() {
         updateSelectCount();
     });
 
-    $('#llp-select-all').off('click').on('click', function () {
-        var visible = $('#llp-wb-list .ll-wb-item:visible');
-        var allSelected = true;
-        visible.each(function () {
-            var key = $(this).attr('data-wb-key');
-            if (!_selectedKeys[key]) allSelected = false;
+    $('#llp-select-all')
+        .off('click')
+        .on('click', function () {
+            var visible = $('#llp-wb-list .ll-wb-item:visible');
+            var allSelected = true;
+            visible.each(function () {
+                var key = $(this).attr('data-wb-key');
+                if (!_selectedKeys[key]) allSelected = false;
+            });
+
+            if (allSelected) {
+                visible.each(function () {
+                    var key = $(this).attr('data-wb-key');
+                    delete _selectedKeys[key];
+                    $(this).find('.ll-wb-checkbox').html(ICON_UNCHECK);
+                });
+            } else {
+                visible.each(function () {
+                    var key = $(this).attr('data-wb-key');
+                    _selectedKeys[key] = true;
+                    $(this).find('.ll-wb-checkbox').html(ICON_SELECT);
+                });
+            }
+            updateSelectCount();
         });
 
-        if (allSelected) {
-            visible.each(function () {
-                var key = $(this).attr('data-wb-key');
-                delete _selectedKeys[key];
-                $(this).find('.ll-wb-checkbox').html(ICON_UNCHECK);
+    $('#llp-delete-selected')
+        .off('click')
+        .on('click', function () {
+            var keys = Object.keys(_selectedKeys);
+            if (keys.length === 0) {
+                toastr.info('请先选择要删除的错题');
+                return;
+            }
+            var list = s.wrongBook || [];
+            var keySet = {};
+            for (var i = 0; i < keys.length; i++) keySet[keys[i]] = true;
+            s.wrongBook = list.filter(function (item) {
+                return !keySet[item.key];
             });
-        } else {
-            visible.each(function () {
-                var key = $(this).attr('data-wb-key');
-                _selectedKeys[key] = true;
-                $(this).find('.ll-wb-checkbox').html(ICON_SELECT);
-            });
-        }
-        updateSelectCount();
-    });
-
-    $('#llp-delete-selected').off('click').on('click', function () {
-        var keys = Object.keys(_selectedKeys);
-        if (keys.length === 0) { toastr.info('请先选择要删除的错题'); return; }
-        var list = s.wrongBook || [];
-        var keySet = {};
-        for (var i = 0; i < keys.length; i++) keySet[keys[i]] = true;
-        s.wrongBook = list.filter(function (item) { return !keySet[item.key]; });
-        saveSettings();
-        _selectedKeys = {};
-        toastr.success('已删除 ' + keys.length + ' 条');
-        openPanel();
-    });
+            saveSettings();
+            _selectedKeys = {};
+            toastr.success('已删除 ' + keys.length + ' 条');
+            openPanel();
+        });
 
     $(document).off('click.ll_wb_card', '.ll-wb-item-content');
     $(document).on('click.ll_wb_card', '.ll-wb-item-content', function (e) {
@@ -550,20 +739,26 @@ function bindAllPanelEvents() {
         }
         $('#llp-wb-list .learnlock-panel-card').remove();
 
-        var entry = (lang === 'en') ? lookupEnWord(word) : lookupZhWord(word);
+        var entry = lang === 'en' ? lookupEnWord(word) : lookupZhWord(word);
         if (!entry) {
             entry = { w: word, l: '', p: '', r: 0, t: [], a: [] };
         }
 
-        var $card = $('<div class="learnlock-word-card-wrap learnlock-panel-card" data-for-key="' + esc(cardKey) + '"></div>');
+        var $card = $(
+            '<div class="learnlock-word-card-wrap learnlock-panel-card" data-for-key="' +
+                esc(cardKey) +
+                '"></div>'
+        );
         $card.html(buildWordCardHtml(entry, lang, null));
         $item.after($card);
 
-        dictLookup(word, lang).then(function (info) {
-            if (!info || !info.found) return;
-            if ($card.attr('data-for-key') !== cardKey) return;
-            $card.html(buildWordCardHtml(entry, lang, info));
-        }).catch(function () {});
+        dictLookup(word, lang)
+            .then(function (info) {
+                if (!info || !info.found) return;
+                if ($card.attr('data-for-key') !== cardKey) return;
+                $card.html(buildWordCardHtml(entry, lang, info));
+            })
+            .catch(function () {});
     });
 
     $(document).off('click.ll_fav_rm', '.ll-fav-remove');
@@ -578,72 +773,113 @@ function bindAllPanelEvents() {
     $(document).off('click.ll_fav_audio', '.ll-fav-audio');
     $(document).on('click.ll_fav_audio', '.ll-fav-audio', function (e) {
         e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
         var apiUrl = $(this).attr('data-audio-url') || '';
         var ttsWord = $(this).attr('data-tts-word') || '';
         var ttsLang = $(this).attr('data-tts-lang') || 'en';
         playAudioChain(apiUrl, ttsWord, ttsLang);
     });
 
-    $('#llp-hl-theme').off('change').on('change', function () {
-        var themeKey = $(this).val();
-        s.highlightTheme = themeKey;
-        applyHighlightTheme(themeKey);
-        saveSettings();
-    });
+    $('#llp-hl-theme')
+        .off('change')
+        .on('change', function () {
+            var themeKey = $(this).val();
+            s.highlightTheme = themeKey;
+            applyHighlightTheme(themeKey);
+            saveSettings();
+        });
 
-    $('#llp-difficulty').off('change').on('change', function () {
-        s.difficultyLevel = $(this).val(); saveSettings();
-    });
-    $('#llp-synonym').off('change').on('change', function () {
-        s.synonymMode = $(this).val(); saveSettings();
-    });
+    $('#llp-difficulty')
+        .off('change')
+        .on('change', function () {
+            s.difficultyLevel = $(this).val();
+            saveSettings();
+        });
+    $('#llp-synonym')
+        .off('change')
+        .on('change', function () {
+            s.synonymMode = $(this).val();
+            saveSettings();
+        });
     function updateTypes() {
         var t = [];
         if ($('#llp-cn2en').prop('checked')) t.push('cn_to_en');
         if ($('#llp-en2cn').prop('checked')) t.push('en_to_cn');
         if (t.length === 0) t = ['cn_to_en', 'en_to_cn'];
-        s.challengeTypes = t; saveSettings();
+        s.challengeTypes = t;
+        saveSettings();
     }
     $('#llp-cn2en, #llp-en2cn').off('change').on('change', updateTypes);
-    $('#llp-wb-priority').off('input').on('input', function () {
-        s.wrongBookPriority = Math.max(0, Math.min(100, Number($(this).val()) || 30)); saveSettings();
-    });
-    $('#llp-unlock').off('input').on('input', function () {
-        s.unlockParagraphsPerQuestion = Math.max(1, Math.min(50, Number($(this).val()) || 1)); saveSettings();
-    });
-    $('#llp-max-hl').off('input').on('input', function () {
-        s.maxWordCardsPerMessage = Math.max(0, Math.min(300, Number($(this).val()) || 0));
-        saveSettings();
-    });
-    $('#llp-max-wrong').off('input').on('input', function () {
-        s.maxWrongAttemptsBeforeHint = Math.max(1, Math.min(10, Number($(this).val()) || 2)); saveSettings();
-    });
-    $('#llp-wb-max').off('input').on('input', function () {
-        s.wrongBookMaxItems = Math.max(20, Math.min(2000, Number($(this).val()) || 200)); saveSettings();
-    });
-    $('#llp-only-due').off('change').on('change', function () {
-        s.wrongBookOnlyDue = $(this).prop('checked'); saveSettings();
-    });
-    $('#llp-ignore-regex').off('input').on('input', function () {
-        s.ignoreRegexLines = String($(this).val() || ''); saveSettings();
-    });
+    $('#llp-wb-priority')
+        .off('input')
+        .on('input', function () {
+            s.wrongBookPriority = Math.max(0, Math.min(100, Number($(this).val()) || 30));
+            saveSettings();
+        });
+    $('#llp-unlock')
+        .off('input')
+        .on('input', function () {
+            s.unlockParagraphsPerQuestion = Math.max(1, Math.min(50, Number($(this).val()) || 1));
+            saveSettings();
+        });
+    $('#llp-max-hl')
+        .off('input')
+        .on('input', function () {
+            s.maxWordCardsPerMessage = Math.max(0, Math.min(300, Number($(this).val()) || 0));
+            saveSettings();
+        });
+    $('#llp-max-wrong')
+        .off('input')
+        .on('input', function () {
+            s.maxWrongAttemptsBeforeHint = Math.max(1, Math.min(10, Number($(this).val()) || 2));
+            saveSettings();
+        });
+    $('#llp-wb-max')
+        .off('input')
+        .on('input', function () {
+            s.wrongBookMaxItems = Math.max(20, Math.min(2000, Number($(this).val()) || 200));
+            saveSettings();
+        });
+    $('#llp-only-due')
+        .off('change')
+        .on('change', function () {
+            s.wrongBookOnlyDue = $(this).prop('checked');
+            saveSettings();
+        });
+    $('#llp-ignore-regex')
+        .off('input')
+        .on('input', function () {
+            s.ignoreRegexLines = String($(this).val() || '');
+            saveSettings();
+        });
 
     var api = window.learnlockDebugApi;
     function refreshDbg() {
-        if (!api) { $('#llp-debug-status').text('调试API未就绪'); return; }
+        if (!api) {
+            $('#llp-debug-status').text('调试API未就绪');
+            return;
+        }
         $('#llp-debug-status').text('日志持续记录中');
         $('#llp-dbg-output').val(String(api.getText() || ''));
     }
     refreshDbg();
-    $('#llp-dbg-copy').off('click').on('click', function () {
-        if (!api) return;
-        var text = api.getReportText ? api.getReportText() : api.getText();
-        if (navigator.clipboard) {
-            navigator.clipboard.writeText(text).then(function () { toastr.success('诊断报告已复制'); });
-        }
-    });
-    $('#llp-dbg-clear').off('click').on('click', function () {
-        if (!api) return; api.clear(); refreshDbg();
-        toastr.success('日志已清空');
-    });
+    $('#llp-dbg-copy')
+        .off('click')
+        .on('click', function () {
+            if (!api) return;
+            var text = api.getReportText ? api.getReportText() : api.getText();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(text).then(function () {
+                    toastr.success('诊断报告已复制');
+                });
+            }
+        });
+    $('#llp-dbg-clear')
+        .off('click')
+        .on('click', function () {
+            if (!api) return;
+            api.clear();
+            refreshDbg();
+            toastr.success('日志已清空');
+        });
 }

@@ -1,7 +1,7 @@
 const debugState = {
     enabled: false,
     maxLines: 600,
-    lines: []
+    lines: [],
 };
 
 function safeJsonStringify(obj) {
@@ -15,7 +15,7 @@ function safeJsonStringify(obj) {
 export function describeElement(node) {
     if (!node) return '(null)';
     var tag = String(node.tagName || '').toLowerCase();
-    var id = node.id ? ('#' + String(node.id)) : '';
+    var id = node.id ? '#' + String(node.id) : '';
     var cls = '';
     if (node.classList && node.classList.length > 0) {
         cls = '.' + Array.from(node.classList).slice(0, 3).join('.');
@@ -28,7 +28,7 @@ export function pushDebugLog(type, data) {
     var line = {
         at: new Date().toISOString(),
         type: String(type || ''),
-        data: data || {}
+        data: data || {},
     };
     debugState.lines.push(line);
     if (debugState.lines.length > debugState.maxLines) {
@@ -71,7 +71,7 @@ function installDebugTraceListeners() {
             code: e.code,
             target: describeElement(e.target),
             active: describeElement(document.activeElement),
-            defaultPrevented: !!e.defaultPrevented
+            defaultPrevented: !!e.defaultPrevented,
         });
     };
 
@@ -83,7 +83,7 @@ function installDebugTraceListeners() {
             code: e.code,
             target: describeElement(e.target),
             active: describeElement(document.activeElement),
-            defaultPrevented: !!e.defaultPrevented
+            defaultPrevented: !!e.defaultPrevented,
         });
     };
 
@@ -95,14 +95,14 @@ function installDebugTraceListeners() {
             code: e.code,
             target: describeElement(e.target),
             active: describeElement(document.activeElement),
-            defaultPrevented: !!e.defaultPrevented
+            defaultPrevented: !!e.defaultPrevented,
         });
     };
 
     var onFocusin = function (e) {
         pushDebugLog('trace-focusin-capture', {
             target: describeElement(e.target),
-            active: describeElement(document.activeElement)
+            active: describeElement(document.activeElement),
         });
     };
 
@@ -115,7 +115,7 @@ function installDebugTraceListeners() {
         keydown: onKeydown,
         keypress: onKeypress,
         keyup: onKeyup,
-        focusin: onFocusin
+        focusin: onFocusin,
     };
 }
 
@@ -150,7 +150,7 @@ export function installDebugApi(moduleName, getSettings, getExtraSnapshot) {
             screen: {
                 width: window.innerWidth,
                 height: window.innerHeight,
-                dpr: window.devicePixelRatio || 1
+                dpr: window.devicePixelRatio || 1,
             },
             location: String(location.href || ''),
             settings: {
@@ -158,8 +158,8 @@ export function installDebugApi(moduleName, getSettings, getExtraSnapshot) {
                 unlockParagraphsPerQuestion: Number(settings.unlockParagraphsPerQuestion || 0),
                 maxWrongAttemptsBeforeHint: Number(settings.maxWrongAttemptsBeforeHint || 0),
                 wrongBookMaxItems: Number(settings.wrongBookMaxItems || 0),
-                wrongBookOnlyDue: !!settings.wrongBookOnlyDue
-            }
+                wrongBookOnlyDue: !!settings.wrongBookOnlyDue,
+            },
         };
     }
 
@@ -167,7 +167,7 @@ export function installDebugApi(moduleName, getSettings, getExtraSnapshot) {
         var base = getRuntimeBase();
         var extra = {};
         try {
-            extra = getExtraSnapshot ? (getExtraSnapshot() || {}) : {};
+            extra = getExtraSnapshot ? getExtraSnapshot() || {} : {};
         } catch (_e) {
             extra = {};
         }
@@ -201,7 +201,7 @@ export function installDebugApi(moduleName, getSettings, getExtraSnapshot) {
         },
         addMark: function (label) {
             pushDebugLog('mark', { label: String(label || '') });
-        }
+        },
     };
 
     setDebugEnabled(true);

@@ -42,12 +42,43 @@ async function fetchOnlineEnglish(word) {
 
         var definition = '';
         var example = '';
-        if (Array.isArray(entry.meanings) && entry.meanings.length > 0) {
-            var m = entry.meanings[0];
-            if (Array.isArray(m.definitions) && m.definitions.length > 0) {
-                definition = String(m.definitions[0].definition || '');
-                example = String(m.definitions[0].example || '');
+        var partOfSpeech = '';
+
+        for (var ei = 0; ei < data.length; ei++) {
+            var oneEntry = data[ei];
+            if (!oneEntry || !Array.isArray(oneEntry.meanings)) continue;
+
+            for (var mi = 0; mi < oneEntry.meanings.length; mi++) {
+                var m = oneEntry.meanings[mi];
+                var posCandidate = String((m && m.partOfSpeech) || '');
+                var defs = m && Array.isArray(m.definitions) ? m.definitions : [];
+
+                for (var di = 0; di < defs.length; di++) {
+                    var d0 = defs[di] || {};
+                    var defText = String(d0.definition || '').trim();
+                    var exText = String(d0.example || '').trim();
+
+                    if (!definition && defText) {
+                        definition = defText;
+                        if (!partOfSpeech && posCandidate) partOfSpeech = posCandidate;
+                    }
+
+                    if (!example && exText) {
+                        example = exText;
+                        if (!partOfSpeech && posCandidate) partOfSpeech = posCandidate;
+                    }
+
+                    if (definition && example && partOfSpeech) break;
+                }
+
+                if (definition && example && partOfSpeech) break;
             }
+
+            if (definition && example && partOfSpeech) break;
+        }
+
+        if (!partOfSpeech && Array.isArray(entry.meanings) && entry.meanings.length > 0) {
+            partOfSpeech = String(entry.meanings[0].partOfSpeech || '');
         }
 
         var audioUrl = '';
@@ -65,7 +96,8 @@ async function fetchOnlineEnglish(word) {
             phonetic: phonetic,
             definition: definition,
             example: example,
-            audioUrl: audioUrl
+            audioUrl: audioUrl,
+            partOfSpeech: partOfSpeech,
         };
 
         onlineCache[key] = result;
@@ -96,7 +128,7 @@ export async function lookup(word, lang) {
         phonetic: '',
         definition: '',
         example: '',
-        audioUrl: ''
+        audioUrl: '',
     };
 
     if (lang === 'en') {
@@ -108,38 +140,24 @@ export async function lookup(word, lang) {
             result.level = enEntry.l || '';
             result.rank = enEntry.r || 0;
             result.pos = enEntry.p || '';
-            // ECDICT 离线数据：音标、英文释义
             if (enEntry.ph) result.phonetic = enEntry.ph;
             if (enEntry.d) result.definition = enEntry.d;
-            // ECDICT tags（考试标签）
             if (Array.isArray(enEntry.tags) && enEntry.tags.length > 0) {
                 result.tags = enEntry.tags;
             }
         }
 
-        // 仅在缺少音标或释义时才尝试在线增强（减少不必要的网络请求）
-        var needOnline = !result.phonetic || !result.definition;
-        if (needOnline) {
-            try {
-                var online = await fetchOnlineEnglish(word);
-                if (online) {
-                    result.found = true;
-                    if (!result.phonetic && online.phonetic) result.phonetic = online.phonetic;
-                    if (!result.definition && online.definition) result.definition = online.definition;
-                    if (online.example) result.example = online.example;
-                    if (online.audioUrl) result.audioUrl = online.audioUrl;
-                }
-            } catch (_onlineErr) {
-                // 离线环境下静默失败，已有 ECDICT 数据兜底
-            }
-        } else {
-            // 有离线数据也尝试获取音频和例句（非阻塞）
-            fetchOnlineEnglish(word).then(function (online) {
-                if (!online) return;
-                if (online.audioUrl) result.audioUrl = online.audioUrl;
+        try {
+            var online = await fetchOnlineEnglish(word);
+            if (online) {
+                result.found = true;
+                if (!result.phonetic && online.phonetic) result.phonetic = online.phonetic;
+                if (!result.definition && online.definition) result.definition = online.definition;
+                if (!result.pos && online.partOfSpeech) result.pos = online.partOfSpeech;
                 if (online.example) result.example = online.example;
-            }).catch(function () {});
-        }
+                if (online.audioUrl) result.audioUrl = online.audioUrl;
+            }
+        } catch (_onlineErr) {}
     } else {
         var zhEntry = lookupZhWord(word);
         if (zhEntry) {
@@ -151,7 +169,7 @@ export async function lookup(word, lang) {
             result.pos = zhEntry.p || '';
 
             // 用第一个英文翻译去在线 API 拿音频、音标、释义
-            var firstEnTrans = (zhEntry.t && zhEntry.t.length > 0) ? zhEntry.t[0] : '';
+            var firstEnTrans = zhEntry.t && zhEntry.t.length > 0 ? zhEntry.t[0] : '';
             if (firstEnTrans) {
                 try {
                     var enOnline = await fetchOnlineEnglish(firstEnTrans);
@@ -160,6 +178,8 @@ export async function lookup(word, lang) {
                         if (enOnline.phonetic) result.phonetic = enOnline.phonetic;
                         if (enOnline.definition) result.definition = enOnline.definition;
                         if (enOnline.example) result.example = enOnline.example;
+                        if (!result.pos && enOnline.partOfSpeech)
+                            result.pos = enOnline.partOfSpeech;
                     }
                 } catch (_zhOnlineErr) {}
             }

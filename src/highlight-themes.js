@@ -1,19 +1,16 @@
 /**
- * 高亮主题预设 (包含发光毛玻璃效果)
+ * 高亮主题预设
  */
 
 export var HIGHLIGHT_THEMES = {
     frost_glow: {
-        name: '霜边泛光 (柔边发光)',
+        name: '霜边泛光',
         css: [
             '.learnlock-hl-word {',
             '    border-radius: 6px;',
             '    padding: 1px 6px;',
-            '    /* 极度透明的偏白/灰底色，制造玻璃透感 */',
             '    background: color-mix(in srgb, var(--SmartThemeBodyColor) 4%, transparent);',
             '    border: none;',
-            '    /* 重点：去除生硬线条，用3层发光叠加制造柔化边缘 */',
-            '    /* 层1: 细微的边缘核心；层2: 向外的柔和光晕；层3: 向内的微弱泛光 */',
             '    box-shadow: ',
             '        0 0 0 1px color-mix(in srgb, var(--SmartThemeBodyColor) 25%, transparent),',
             '        0 0 8px color-mix(in srgb, var(--SmartThemeBodyColor) 25%, transparent),',
@@ -39,8 +36,8 @@ export var HIGHLIGHT_THEMES = {
             '    box-shadow: ',
             '        0 0 0 1px color-mix(in srgb, var(--SmartThemeBodyColor) 10%, transparent),',
             '        0 0 4px color-mix(in srgb, var(--SmartThemeBodyColor) 10%, transparent);',
-            '}'
-        ].join('\n')
+            '}',
+        ].join('\n'),
     },
     glass: {
         name: '玻璃光泽 (提亮版)',
@@ -66,8 +63,8 @@ export var HIGHLIGHT_THEMES = {
             '    opacity: 0.7;',
             '    background: color-mix(in srgb, var(--SmartThemeBodyColor) 6%, transparent);',
             '    border-color: color-mix(in srgb, var(--SmartThemeBodyColor) 15%, transparent);',
-            '}'
-        ].join('\n')
+            '}',
+        ].join('\n'),
     },
     soft: {
         name: '柔和底色',
@@ -86,8 +83,8 @@ export var HIGHLIGHT_THEMES = {
             '}',
             '.learnlock-hl-solved {',
             '    background: color-mix(in srgb, var(--SmartThemeBodyColor) 5%, transparent);',
-            '}'
-        ].join('\n')
+            '}',
+        ].join('\n'),
     },
     marker: {
         name: '马克笔',
@@ -118,8 +115,8 @@ export var HIGHLIGHT_THEMES = {
             '    background-repeat: no-repeat;',
             '    background-size: 100% 30%;',
             '    background-position: 0 88%;',
-            '}'
-        ].join('\n')
+            '}',
+        ].join('\n'),
     },
     dashbox: {
         name: '虚线外框',
@@ -140,8 +137,8 @@ export var HIGHLIGHT_THEMES = {
             '.learnlock-hl-solved {',
             '    border-color: color-mix(in srgb, var(--SmartThemeBodyColor) 20%, transparent);',
             '    opacity: 0.8;',
-            '}'
-        ].join('\n')
+            '}',
+        ].join('\n'),
     },
     underline: {
         name: '简约下划',
@@ -162,8 +159,8 @@ export var HIGHLIGHT_THEMES = {
             '.learnlock-hl-solved {',
             '    border-bottom: 2px dashed color-mix(in srgb, var(--SmartThemeBodyColor) 20%, transparent);',
             '    opacity: 0.8;',
-            '}'
-        ].join('\n')
+            '}',
+        ].join('\n'),
     },
     pill: {
         name: '胶囊形',
@@ -187,9 +184,9 @@ export var HIGHLIGHT_THEMES = {
             '    background: transparent;',
             '    border-color: color-mix(in srgb, var(--SmartThemeBodyColor) 15%, transparent);',
             '    opacity: 0.8;',
-            '}'
-        ].join('\n')
-    }
+            '}',
+        ].join('\n'),
+    },
 };
 
 export var DEFAULT_THEME = 'frost_glow';

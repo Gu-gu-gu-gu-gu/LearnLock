@@ -15,7 +15,8 @@ function escapeHtml(input) {
     return s;
 }
 
-var SAFE_TAG_RE = /(<\/?\s*(?:details|summary|blockquote|br|hr|table|thead|tbody|tr|th|td|ul|ol|li|sup|sub|ruby|rt|rp|mark)\b[^>]*>)/gi;
+var SAFE_TAG_RE =
+    /(<\/?\s*(?:details|summary|blockquote|br|hr|table|thead|tbody|tr|th|td|ul|ol|li|sup|sub|ruby|rt|rp|mark)\b[^>]*>)/gi;
 var SAFE_PH_PREFIX = '\x00SAFE_TAG_';
 
 function basicMarkdown(text) {
@@ -65,7 +66,7 @@ function findEnglishWordPositions(text) {
             raw: match[0],
             word: word,
             lang: 'en',
-            entry: entry
+            entry: entry,
         });
     }
     return results;
@@ -103,17 +104,21 @@ function findChineseWordPositions(text) {
                 raw: segment,
                 word: segment,
                 lang: 'zh',
-                entry: entry
+                entry: entry,
             });
         }
     }
-    results.sort(function (a, b) { return a.start - b.start; });
+    results.sort(function (a, b) {
+        return a.start - b.start;
+    });
     return results;
 }
 
 function mergePositions(enPos, zhPos) {
     var all = enPos.concat(zhPos);
-    all.sort(function (a, b) { return a.start - b.start; });
+    all.sort(function (a, b) {
+        return a.start - b.start;
+    });
 
     var merged = [];
     var lastEnd = -1;
@@ -149,7 +154,9 @@ function randomSelectPositions(positions, limit) {
     }
     var shuffled = shuffleArray(positions);
     var selected = shuffled.slice(0, limit);
-    selected.sort(function (a, b) { return a.start - b.start; });
+    selected.sort(function (a, b) {
+        return a.start - b.start;
+    });
     return selected;
 }
 
@@ -204,7 +211,7 @@ export function highlightParagraph(text, currentChallenge, solvedWords, highligh
         }
 
         var wordLower = String(pos.word).toLowerCase();
-        var isChallengeWord = (challengeWord && wordLower === challengeWord);
+        var isChallengeWord = challengeWord && wordLower === challengeWord;
         var isSolved = !!solvedSet[wordLower];
 
         var cls = 'learnlock-hl-word';
@@ -218,14 +225,35 @@ export function highlightParagraph(text, currentChallenge, solvedWords, highligh
         }
         var partOfSpeech = escapeHtml(String(pos.entry.p || ''));
 
-        html += '<span class="' + cls + '"'
-            + ' data-hl-word="' + escapeHtml(pos.word) + '"'
-            + ' data-hl-lang="' + escapeHtml(pos.lang) + '"'
-            + ' data-hl-level="' + level + '"'
-            + ' data-hl-trans="' + translations + '"'
-            + ' data-hl-pos="' + partOfSpeech + '"'
-            + ' title="' + level + ' ' + partOfSpeech + ' — ' + translations + '"'
-            + '>' + escapeHtml(pos.raw) + '</span>';
+        html +=
+            '<span class="' +
+            cls +
+            '"' +
+            ' data-hl-word="' +
+            escapeHtml(pos.word) +
+            '"' +
+            ' data-hl-lang="' +
+            escapeHtml(pos.lang) +
+            '"' +
+            ' data-hl-level="' +
+            level +
+            '"' +
+            ' data-hl-trans="' +
+            translations +
+            '"' +
+            ' data-hl-pos="' +
+            partOfSpeech +
+            '"' +
+            ' title="' +
+            level +
+            ' ' +
+            partOfSpeech +
+            ' — ' +
+            translations +
+            '"' +
+            '>' +
+            escapeHtml(pos.raw) +
+            '</span>';
 
         cursor = pos.end;
     }
@@ -237,6 +265,50 @@ export function highlightParagraph(text, currentChallenge, solvedWords, highligh
     return html;
 }
 
+function normalizePosKey(posText) {
+    var s = String(posText || '')
+        .trim()
+        .toLowerCase();
+    s = s.replace(/\./g, '');
+    s = s.replace(/\s+/g, ' ');
+    return s;
+}
+
+function toPosAbbr(posText) {
+    var raw = String(posText || '').trim();
+    if (!raw) return '';
+
+    var key = normalizePosKey(raw);
+
+    var map = {
+        noun: 'n.',
+        verb: 'v.',
+        adjective: 'adj.',
+        adverb: 'adv.',
+        pronoun: 'pron.',
+        preposition: 'prep.',
+        conjunction: 'conj.',
+        interjection: 'interj.',
+        exclamation: 'interj.',
+        determiner: 'det.',
+        article: 'art.',
+        numeral: 'num.',
+        auxiliary: 'aux.',
+        'auxiliary verb': 'aux.v.',
+        modal: 'modal v.',
+        'modal verb': 'modal v.',
+        phrase: 'phr.',
+        idiom: 'idm.',
+    };
+
+    if (map[key]) return map[key];
+
+    if (/^[a-z]{1,6}\.$/i.test(raw)) return raw;
+    if (/^[a-z]{1,6}$/i.test(raw)) return raw.toLowerCase() + '.';
+
+    return raw;
+}
+
 /**
  * 构建词汇详情弹出卡片的 HTML
  */
@@ -245,7 +317,7 @@ export function buildWordCardHtml(entry, lang, onlineInfo) {
 
     var translations = Array.isArray(entry.t) ? entry.t : [];
     var level = escapeHtml(String(entry.l || ''));
-    var pos = escapeHtml(String(entry.p || ''));
+    var rawPos = String(entry.p || '');
     var rank = Number(entry.r || 0);
 
     var enWord = '';
@@ -284,7 +356,11 @@ export function buildWordCardHtml(entry, lang, onlineInfo) {
         if (onlineInfo.definition) definition = String(onlineInfo.definition);
         if (onlineInfo.example) example = String(onlineInfo.example);
         if (onlineInfo.audioUrl) audioUrl = String(onlineInfo.audioUrl);
+        if (!rawPos && onlineInfo.partOfSpeech) rawPos = String(onlineInfo.partOfSpeech);
     }
+
+    var posAbbr = toPosAbbr(rawPos);
+    var pos = escapeHtml(posAbbr || rawPos);
 
     var isFav = false;
     try {
@@ -299,16 +375,35 @@ export function buildWordCardHtml(entry, lang, onlineInfo) {
 
     html += '<div class="learnlock-wc-header">';
     html += '<span class="learnlock-wc-word">' + escapeHtml(enWord || zhWord) + '</span>';
-    if (phonetic) html += ' <span class="learnlock-wc-phonetic">' + escapeHtml(phonetic) + '</span>';
-    html += ' <button class="learnlock-wc-audio-btn"'
-        + ' data-audio-url="' + escapeHtml(audioUrl) + '"'
-        + ' data-tts-word="' + escapeHtml(enWord || zhWord) + '"'
-        + ' data-tts-lang="en"'
-        + ' title="播放发音">' + ICON_AUDIO + '</button>';
-    html += ' <button class="learnlock-wc-fav-btn' + (isFav ? ' learnlock-wc-fav-active' : '') + '"'
-        + ' data-fav-word="' + escapeHtml(String(entry.w || '')) + '"'
-        + ' data-fav-lang="' + escapeHtml(lang) + '"'
-        + ' title="' + (isFav ? '取消收藏' : '收藏') + '">' + favIcon + '</button>';
+    if (phonetic)
+        html += ' <span class="learnlock-wc-phonetic">' + escapeHtml(phonetic) + '</span>';
+    html +=
+        ' <button class="learnlock-wc-audio-btn"' +
+        ' data-audio-url="' +
+        escapeHtml(audioUrl) +
+        '"' +
+        ' data-tts-word="' +
+        escapeHtml(enWord || zhWord) +
+        '"' +
+        ' data-tts-lang="en"' +
+        ' title="播放发音">' +
+        ICON_AUDIO +
+        '</button>';
+    html +=
+        ' <button class="learnlock-wc-fav-btn' +
+        (isFav ? ' learnlock-wc-fav-active' : '') +
+        '"' +
+        ' data-fav-word="' +
+        escapeHtml(String(entry.w || '')) +
+        '"' +
+        ' data-fav-lang="' +
+        escapeHtml(lang) +
+        '"' +
+        ' title="' +
+        (isFav ? '取消收藏' : '收藏') +
+        '">' +
+        favIcon +
+        '</button>';
     html += '</div>';
 
     html += '<div class="learnlock-wc-meta">';
@@ -327,11 +422,16 @@ export function buildWordCardHtml(entry, lang, onlineInfo) {
     }
 
     if (definition) {
-        html += '<div class="learnlock-wc-row"><b>英文释义：</b>' + escapeHtml(definition) + '</div>';
+        var defPrefix = posAbbr ? posAbbr + ' ' : '';
+        html +=
+            '<div class="learnlock-wc-row"><b>英文释义：</b>' +
+            escapeHtml(defPrefix + definition) +
+            '</div>';
     }
 
     if (example) {
-        html += '<div class="learnlock-wc-row"><b>例句：</b><i>' + escapeHtml(example) + '</i></div>';
+        html +=
+            '<div class="learnlock-wc-row"><b>例句：</b><i>' + escapeHtml(example) + '</i></div>';
     }
 
     html += '</div>';

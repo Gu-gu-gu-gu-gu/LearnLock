@@ -73,7 +73,10 @@ async function loadVocabData() {
             var allCjk = true;
             for (var rci = 0; rci < revZh.length; rci++) {
                 var rcc = revZh.charCodeAt(rci);
-                if (rcc < 0x4e00 || rcc > 0x9fff) { allCjk = false; break; }
+                if (rcc < 0x4e00 || rcc > 0x9fff) {
+                    allCjk = false;
+                    break;
+                }
             }
             if (!allCjk) continue;
             if (indexZh[revZh]) {
@@ -87,7 +90,7 @@ async function loadVocabData() {
                     a: [],
                     l: revEn.l || 'B1',
                     p: revEn.p || '',
-                    r: Number(revEn.r) || 0
+                    r: Number(revEn.r) || 0,
                 };
             }
         }
@@ -159,12 +162,12 @@ var levelOrder = ['A1', 'A2', 'B1', 'B2', 'C1'];
  */
 export function filterByDifficulty(candidates, lang, difficultyLevel) {
     var levelMap = {
-        'beginner': ['A1'],
-        'elementary': ['A1', 'A2'],
-        'intermediate': ['A1', 'A2', 'B1'],
-        'upper': ['A2', 'B1', 'B2'],
-        'advanced': ['B1', 'B2', 'C1'],
-        'challenge': ['B2', 'C1']
+        beginner: ['A1'],
+        elementary: ['A1', 'A2'],
+        intermediate: ['A1', 'A2', 'B1'],
+        upper: ['A2', 'B1', 'B2'],
+        advanced: ['B1', 'B2', 'C1'],
+        challenge: ['B2', 'C1'],
     };
 
     var allowedLevels = levelMap[difficultyLevel] || ['A1', 'A2', 'B1'];
@@ -173,7 +176,7 @@ export function filterByDifficulty(candidates, lang, difficultyLevel) {
         allowedSet[allowedLevels[a]] = true;
     }
 
-    var lookupFn = (lang === 'en') ? lookupEnWord : lookupZhWord;
+    var lookupFn = lang === 'en' ? lookupEnWord : lookupZhWord;
     var results = [];
 
     for (var i = 0; i < candidates.length; i++) {

@@ -16,7 +16,11 @@ async function loadStopwords() {
     try {
         var enRes = await fetch(base + 'data/en-stopwords.json', { cache: 'force-cache' });
         var enArr = await enRes.json();
-        enStopwords = new Set(enArr.map(function (w) { return String(w).toLowerCase(); }));
+        enStopwords = new Set(
+            enArr.map(function (w) {
+                return String(w).toLowerCase();
+            })
+        );
     } catch (e) {
         console.warn('[LearnLock] 英文停用词加载失败:', e);
         enStopwords = new Set();
@@ -25,7 +29,11 @@ async function loadStopwords() {
     try {
         var zhRes = await fetch(base + 'data/zh-stopwords.json', { cache: 'force-cache' });
         var zhArr = await zhRes.json();
-        zhStopwords = new Set(zhArr.map(function (w) { return String(w); }));
+        zhStopwords = new Set(
+            zhArr.map(function (w) {
+                return String(w);
+            })
+        );
     } catch (e) {
         console.warn('[LearnLock] 中文停用词加载失败:', e);
         zhStopwords = new Set();
@@ -99,13 +107,13 @@ function extractChineseWords(text) {
  * 过滤停用词和低质量候选
  */
 function filterCandidates(words, lang) {
-    var stopSet = (lang === 'en') ? enStopwords : zhStopwords;
+    var stopSet = lang === 'en' ? enStopwords : zhStopwords;
     if (!stopSet) stopSet = new Set();
 
     var result = [];
     for (var i = 0; i < words.length; i++) {
         var w = words[i];
-        var check = (lang === 'en') ? w.toLowerCase() : w;
+        var check = lang === 'en' ? w.toLowerCase() : w;
         if (stopSet.has(check)) continue;
         result.push(w);
     }
@@ -123,6 +131,6 @@ export async function processText(text) {
 
     return {
         en: filteredEn,
-        zh: filteredZh
+        zh: filteredZh,
     };
 }

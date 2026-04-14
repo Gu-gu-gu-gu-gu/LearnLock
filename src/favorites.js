@@ -8,7 +8,9 @@ export function initFavorites(moduleName) {
     _moduleName = moduleName;
 }
 
-function ctx() { return SillyTavern.getContext(); }
+function ctx() {
+    return SillyTavern.getContext();
+}
 
 function getList() {
     var es = ctx().extensionSettings;
@@ -20,7 +22,9 @@ function getList() {
 }
 
 function save() {
-    try { ctx().saveSettingsDebounced(); } catch (_) {}
+    try {
+        ctx().saveSettingsDebounced();
+    } catch (_) {}
 }
 
 export function addFavorite(entry, lang, extraInfo) {
@@ -40,7 +44,7 @@ export function addFavorite(entry, lang, extraInfo) {
         rank: Number(entry.r || 0),
         translations: Array.isArray(entry.t) ? entry.t.slice() : [],
         aliases: Array.isArray(entry.a) ? entry.a.slice() : [],
-        addedAt: Date.now()
+        addedAt: Date.now(),
     };
 
     if (extraInfo) {
