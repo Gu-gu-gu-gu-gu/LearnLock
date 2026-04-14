@@ -217,8 +217,6 @@
     padding: 0 4px;
 }
 
-/* ===== 高亮词基础样式（主题会覆盖） ===== */
-
 .learnlock-hl-word {
     cursor: pointer;
     display: inline;

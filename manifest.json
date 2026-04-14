@@ -7,7 +7,7 @@
     "js": "index.js",
     "css": "style.css",
     "author": "咕咕",
-    "version": "0.4.0",
+    "version": "0.4.1",
     "homePage": "https://github.com/Gu-gu-gu-gu-gu/LearnLock",
     "auto_update": false,
     "minimum_client_version": "1.12.0"

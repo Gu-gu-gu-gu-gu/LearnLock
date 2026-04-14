@@ -86,7 +86,7 @@ async function init() {
 
         initFavorites(MODULE_NAME);
 
-        console.log('[LearnLock] 插件初始化完成（v0.4.0）');
+        console.log('[LearnLock] 插件初始化完成（v0.4.1）');
     } catch (error) {
         console.error('[LearnLock] 初始化失败:', error);
         toastr.error('Learn Lock 初始化失败，请打开控制台查看报错');
